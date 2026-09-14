@@ -52,7 +52,12 @@ step() { printf '\n── %s ──\n' "$*"; }
 short_sha() { git rev-parse --short=7 "${1:-HEAD}"; }
 
 running_api() {
-  curl -fsS --max-time 20 "$KSIROVKA_URL/health" 2>/dev/null \
+  local ip="${HOST#*@}"
+  local extra=()
+  if [[ "$KSIROVKA_URL" == https://* ]]; then
+    extra=(--resolve "${KSIROVKA_DOMAIN}:443:${ip}")
+  fi
+  curl -fsS --max-time 20 "${extra[@]}" "$KSIROVKA_URL/health" 2>/dev/null \
     | python3 -c 'import json,sys; print(json.load(sys.stdin).get("commit","?"))' 2>/dev/null \
     || echo "?"
 }

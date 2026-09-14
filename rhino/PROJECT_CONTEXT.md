@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Ve vývoji → první produkční VPS (instalace probíhá)  
-> **Poslední aktualizace:** 2026-09-14 17:03
+> **Stav:** Produkční API+web na VPS běží (`316718a`)  
+> **Poslední aktualizace:** 2026-09-14 17:12
 
 ---
 
@@ -61,12 +61,12 @@ Expo účet: `martinpolak` (`martin.polak.cz@gmail.com`). EAS projekt: `@martinp
   - Mobil v releasu volá `https://ksirovka.martinpolak.cz/api/v1` (není potřeba nový TestFlight build, jakmile API na téhle URL žije).
   - App Store Connect: Apple ID **6811373052**.
 - **Infrastruktura:** Docker Compose v `/opt/ksirovka-deploy`: Caddy :80/:443, `ksirovka-api` (jeden image z GHCR), `ksirovka-postgres`. Image staví CI, tag = krátký git commit. Rollback = starší tag, bez buildu na serveru.
-- **DNS (ověřeno 2026-09-14 17:03):**
-  - `ksirovka.martinpolak.cz` **A = 62.83.17.63** (správně).
-  - VPS IPv6: `2a0a:4cc0:61:4215:c477:34ff:feb2:9147`.
-  - AAAA u resolveru pořád `2a00:4b40:aaaa:2005::6` (WebSupport) — ověřit u autoritativního NS; pokud sedí nová, počkat na cache.
-- **SSH:** klíč `$HOME/.ssh/netcup_ksirovka_ed25519` → `root@62.83.17.63` (Debian 13, 3.8 GiB RAM, 125 G disk). Docker ještě není — jde `server-setup.sh`.
-- **Git / CI:** první commit + GitHub remote se zakládají teď. Image `ghcr.io/martinpolakcz/ksirovka` až po pushi na `main`.
+- **DNS (ověřeno 2026-09-14 17:11):**
+  - `ksirovka.martinpolak.cz` **A = 62.83.17.63**.
+  - **AAAA = `2a0a:4cc0:61:4215:c477:34ff:feb2:9147`** (IPv6 VPS). `/health` přes `-6` vrací `316718a`.
+- **SSH:** `$HOME/.ssh/netcup_ksirovka_ed25519` → `root@62.83.17.63` (Debian 13). Docker nainstalován `server-setup.sh`.
+- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `316718a`, CI success, image `ghcr.io/martinpolakcz/ksirovka:316718a`.
+- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` zvenčí i `APP_COMMIT` v kontejneru = `316718a`. Caddyfile inode hostitel = kontejner. Noční záloha timer 03:17 UTC.
 
 Jediné místo s IP a doménami: `deploy/target.env`.
 
@@ -161,12 +161,12 @@ Produkční URL v appce už je `https://ksirovka.martinpolak.cz/api/v1`. Nový b
 ## 6. Úkoly a stav projektu (To-Do List)
 
 ### 🔴 Vysoká priorita (Blockery / Blízké termíny)
-- [x] **Pubkey na VPS** — SSH jako root funguje (2026-09-14 17:03).
-- [ ] **Opravit AAAA** u `ksirovka.martinpolak.cz` na `2a0a:4cc0:61:4215:c477:34ff:feb2:9147` (resolver pořád ukazuje WebSupport).
-- [ ] **GitHub repo + první push na main** — probíhá.
-- [ ] **`./scripts/server-setup.sh` + `.env` na serveru** (PG_PASSWORD hex, ADMIN_*) + `docker login ghcr.io`.
-- [ ] **`./scripts/deploy.sh`** a ověřit `/health` zvenčí (commit sedí).
+- [x] **Pubkey na VPS** — SSH jako root funguje.
+- [x] **AAAA** u `ksirovka.martinpolak.cz` = IPv6 VPS; `/health` přes IPv6 vrací `316718a`.
+- [x] **GitHub + CI** — https://github.com/martinpolakcz/ksirovka, image `316718a`.
+- [x] **`server-setup.sh` + první `deploy.sh`** — ověřeno zvenčí, commit sedí.
 - [ ] **Otestovat kolo v TestFlight** — sync na `/vysledky` i Žebříčky.
+- [ ] Import obsahu do produkční DB (`import:content`) — homepage z API je zatím prázdná.
 - [ ] App Store listing + Submit for Review (screenshoty, privacy, build 1.0.0 (3)).
 
 ### 🟡 Střední priorita (Nové funkce / Refaktoring)
@@ -185,9 +185,7 @@ Produkční URL v appce už je `https://ksirovka.martinpolak.cz/api/v1`. Nový b
 ---
 
 ## 7. Otevřené body a diskuse (Open Points)
-- [ ] **AAAA u `ksirovka.martinpolak.cz`** — teď míří na WebSupport IPv6. Bez opravy není produkce hotová pro mobily.
-- [ ] **GitHub remote** — `registry.yaml` má `remote: ""`. Bez něj CI/GHCR neexistuje.
-- [ ] **SSH přístup** — klíč existuje, server ho nepřijímá. Čeká se na vložení do authorized_keys.
+- [ ] **ADMIN_PASSWORD** je vygenerovaný hex v `/opt/ksirovka-deploy/.env` — uložit do vaultu, do gitu ne.
 - [ ] **ksirovka.cz vs martinpolak.cz** — ostré API je na subdoméně (appka to tak má). Apex zůstává na WebSupport, dokud se nerozhodne o přepnutí.
 - [ ] Apple login v EAS: dočasný `EXPO_APP_STORE_AUTH_SERVICE_KEY` (eas-cli#4392).
 - [ ] Privacy / GDPR text pro App Store.
@@ -198,15 +196,15 @@ Produkční URL v appce už je `https://ksirovka.martinpolak.cz/api/v1`. Nový b
 ### Otevřené chyby (Active Bugs)
 | ID | Popis chyby | Závažnost | Prostředí | Krok k reprodukci |
 | --- | --- | --- | --- | --- |
-| BUG-03 | Produkční API pro scorecard ještě neběží na VPS (SSH + image + deploy) | High | Prod | TestFlight kolo → `https://ksirovka.martinpolak.cz/vysledky` |
 | BUG-04 | Statický FTP web nemá live `/vysledky` | Med | Prod (`ksirovka.cz`) | Otevřít `/vysledky` na ostrém hostingu bez API |
-| BUG-05 | AAAA `ksirovka.martinpolak.cz` vede na WebSupport, A na nový VPS | High | Prod / mobily | `dig AAAA ksirovka.martinpolak.cz` |
 
 ### Vyřešené chyby (Resolved Bugs Audit)
 | ID | Popis chyby | Datum opravy | Způsob řešení / Commit |
 | --- | --- | --- | --- |
 | BUG-01 | `eas build` / Apple login: `iTunes service key is empty` | 2026-09-12 | `EXPO_APP_STORE_AUTH_SERVICE_KEY` + ASC API key |
 | BUG-02 | EAS `npm ci` EUSAGE — závislosti mimo lockfile | 2026-09-12 | Závislosti odstraněny, build `f2c5af4a-…` prošel |
+| BUG-03 | Produkční API pro scorecard neběželo | 2026-09-14 | VPS + CI image `316718a`; `/health` A i AAAA sedí |
+| BUG-05 | AAAA mířila na WebSupport | 2026-09-14 | AAAA = `2a0a:4cc0:61:4215:c477:34ff:feb2:9147` |
 
 ---
 
