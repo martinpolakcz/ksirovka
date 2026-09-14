@@ -1,0 +1,38 @@
+# Kšírovka – React SPA na Apache (WebSupport / webhosting.cz)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # HTTPS (doporučeno – odkomentujte po nasazení SSL)
+  # RewriteCond %{HTTPS} off
+  # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # PHP endpointy nech projít (kontaktní formulář)
+  RewriteRule ^contact\.php$ - [L]
+
+  # Statické soubory nech projít
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Vše ostatní → SPA (index.html)
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Komprese (pokud modul dostupný)
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>
+
+# Cache pro assets s hashem ve jménu
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 month"
+  ExpiresByType image/png "access plus 1 month"
+  ExpiresByType image/webp "access plus 1 month"
+  ExpiresByType image/svg+xml "access plus 1 month"
+</IfModule>
+
+DirectoryIndex index.html index.php

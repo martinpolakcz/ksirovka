@@ -1,0 +1,19 @@
+{
+	auto_https off
+}
+
+:80 {
+	encode gzip
+	reverse_proxy ksirovka-staging-api:3801
+	header X-Robots-Tag "noindex, nofollow"
+	respond /robots.txt <<ROBOTS
+User-agent: *
+Disallow: /
+ROBOTS 200
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		X-Frame-Options SAMEORIGIN
+		-X-Powered-By
+	}
+}

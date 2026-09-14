@@ -1,0 +1,46 @@
+name: ksirovka-staging
+services:
+  ksirovka-staging-caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["8088:80"]
+    volumes:
+      - ./Caddyfile.staging:/etc/caddy/Caddyfile:ro
+      - staging-caddy-data:/data
+      - staging-caddy-config:/config
+
+  ksirovka-staging-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ksirovka
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ksirovka
+    volumes:
+      - staging-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ksirovka"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ksirovka-staging-api:
+    image: ghcr.io/martinpolakcz/ksirovka:${IMAGE_TAG:?IMAGE_TAG není nastaven — nasazuj přes ./scripts/deploy.sh}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://ksirovka:${PG_PASSWORD}@ksirovka-staging-postgres:5432/ksirovka
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://62.83.17.63:8088}
+      LEGACY_SITE_URL: ${LEGACY_SITE_URL:-https://ksirovka.cz}
+      WEB_DIST: /app/web-dist
+      API_HOST: 0.0.0.0
+      API_PORT: "3801"
+    depends_on:
+      ksirovka-staging-postgres:
+        condition: service_healthy
+
+volumes:
+  staging-caddy-data:
+  staging-caddy-config:
+  staging-postgres-data:

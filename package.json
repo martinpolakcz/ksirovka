@@ -1,0 +1,22 @@
+{
+  "name": "ksirovka",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,api -c cyan,magenta \"npm run dev -w @ksirovka/web\" \"npm run dev -w @ksirovka/api\"",
+    "build": "npm run build -w @ksirovka/web && npm run build -w @ksirovka/api",
+    "build:webhosting": "npm run sync:static-content && node scripts/package-webhosting.mjs",
+    "db:migrate": "npm run db:migrate -w @ksirovka/api",
+    "db:seed": "npm run db:seed -w @ksirovka/api",
+    "import:content": "npm run import:content -w @ksirovka/api",
+    "sync:static-content": "node scripts/sync-static-content.mjs",
+    "refresh:content": "npm run import:content && npm run sync:static-content",
+    "test": "npm run test -w @ksirovka/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

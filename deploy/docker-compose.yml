@@ -1,0 +1,49 @@
+name: ksirovka
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      KSIROVKA_DOMAIN: ${KSIROVKA_DOMAIN}
+      CADDY_EMAIL: ${CADDY_EMAIL:-martin.polak.cz@gmail.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  ksirovka-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ksirovka
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ksirovka
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ksirovka"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ksirovka-api:
+    image: ghcr.io/martinpolakcz/ksirovka:${IMAGE_TAG:?IMAGE_TAG není nastaven — nasazuj přes ./scripts/deploy.sh}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://ksirovka:${PG_PASSWORD}@ksirovka-postgres:5432/ksirovka
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://ksirovka.martinpolak.cz,https://ksirovka.cz}
+      LEGACY_SITE_URL: ${LEGACY_SITE_URL:-https://ksirovka.cz}
+      WEB_DIST: /app/web-dist
+      API_HOST: 0.0.0.0
+      API_PORT: "3801"
+    depends_on:
+      ksirovka-postgres:
+        condition: service_healthy
+
+volumes:
+  caddy-data:
+  caddy-config:
+  postgres-data:

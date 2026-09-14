@@ -1,0 +1,135 @@
+export const navigationStructure = {
+  main: [
+    {
+      key: "offer",
+      children: [
+        {
+          key: "golf",
+          href: "/driving-range",
+          children: [
+            { key: "drivingRange", href: "/driving-range" },
+            { key: "golfAcademy", href: "/golfova-akademie" },
+            { key: "golfSimulator", href: "/golfovy-simulator" },
+            { key: "priceList", href: "/cenik" },
+            { key: "golfClub", href: "/golf-club-ksirovka" },
+            { key: "juniorAcademy", href: "/junior-golf-academy" },
+            { key: "howToStart", href: "/jak-zacit" },
+            { key: "trainers", href: "/treneri" },
+            { key: "camps", href: "/tabory-a-golfove-kempy" },
+            { key: "golfEvents", href: "/akce-a-oslavy-s-golfem" },
+            { key: "gallery", href: "/fotogalerie-5" },
+          ],
+        },
+        {
+          key: "hopsalkov",
+          href: "/park-sportu-a-zabavy",
+          children: [
+            { key: "park", href: "/park-sportu-a-zabavy" },
+            { key: "birthdays", href: "/narozeninove-oslavy" },
+            { key: "priceList", href: "/cenik-3" },
+            { key: "dayCamps", href: "/primestske-tabory" },
+            { key: "rules", href: "/provozni-rad" },
+            { key: "gallery", href: "/fotogalerie-3" },
+          ],
+        },
+        {
+          key: "bodyStudio",
+          href: "/body-studio-ksirovka",
+          children: [
+            { key: "bodyStudioMain", href: "/body-studio-ksirovka" },
+            { key: "pilatesReformer", href: "/pilates-reformer-1" },
+            { key: "schedule", href: "/rozvrh" },
+            { key: "powerPlate", href: "/power-plate" },
+            { key: "solarium", href: "/solarium" },
+            { key: "priceList", href: "/cenik-4" },
+            { key: "trainers", href: "/treneri-1" },
+            { key: "massages", href: "/masaze" },
+          ],
+        },
+        {
+          key: "minigolf",
+          href: "/charakteristika-hry-1",
+          children: [
+            { key: "gameDescription", href: "/charakteristika-hry-1" },
+            { key: "priceList", href: "/cenik-2" },
+            { key: "rules", href: "/pravidla-1" },
+            { key: "results", href: "/vysledky" },
+            { key: "gallery", href: "/fotogalerie-4" },
+          ],
+        },
+        {
+          key: "footgolf",
+          href: "/charakteristika-hry",
+          children: [
+            { key: "gameDescription", href: "/charakteristika-hry" },
+            { key: "priceList", href: "/cenik-1" },
+            { key: "rules", href: "/pravidla" },
+            { key: "footgolfEvents", href: "/akce-a-oslavy-na-fotbalgolfu" },
+            { key: "results", href: "/vysledky" },
+            { key: "gallery", href: "/fotogalerie-1" },
+          ],
+        },
+        {
+          key: "bistro",
+          href: "/popis",
+          children: [
+            { key: "description", href: "/popis" },
+            { key: "drinksMenu", href: "/napojovy-listek-cenik" },
+            { key: "gallery", href: "/fotogalerie-2" },
+          ],
+        },
+        {
+          key: "events",
+          href: "/teambuildingy-a-firemni-akce",
+          children: [
+            { key: "teambuilding", href: "/teambuildingy-a-firemni-akce" },
+            { key: "christmasParties", href: "/vanocni-vecirky" },
+            { key: "stagParties", href: "/rozlucky-se-svobodou" },
+            { key: "celebrations", href: "/oslavy" },
+            { key: "weddings", href: "/svatby" },
+            { key: "kidsParties", href: "/detske-oslavy" },
+            { key: "gallery", href: "/fotogalerie-6" },
+          ],
+        },
+      ],
+    },
+    { key: "news", href: "/novinky" },
+    { key: "results", href: "/vysledky" },
+    { key: "gallery", href: "/foto" },
+    { key: "video", href: "/video" },
+    { key: "vouchers", href: "https://eshop.ksirovka.cz/", external: true },
+    { key: "contact", href: "/kontakt" },
+    { key: "openingHours", href: "/provozni-doba" },
+    { key: "downloads", href: "/ke-stazeni" },
+    {
+      key: "reservation",
+      href: "https://eshop.ksirovka.cz/rezervace",
+      external: true,
+      highlight: true,
+    },
+  ],
+  footer: [
+    { key: "golf", href: "/driving-range" },
+    { key: "hopsalkov", href: "/park-sportu-a-zabavy" },
+    { key: "bodyStudio", href: "/body-studio-ksirovka" },
+    { key: "minigolf", href: "/charakteristika-hry-1" },
+    { key: "footgolf", href: "/charakteristika-hry" },
+    { key: "results", href: "/vysledky" },
+    { key: "bistro", href: "/popis" },
+    { key: "events", href: "/teambuildingy-a-firemni-akce" },
+  ],
+} as const;
+
+export const siteConfig = {
+  name: "Kšírovka",
+  phone: "+420 605 700 717",
+  email: "info@ksirovka.cz",
+  address: {
+    street: "K Lávce 705/8",
+    city: "619 00 Brno, Horní Heršpice",
+  },
+  social: {
+    facebook: "https://www.facebook.com/ksirovka/",
+    instagram: "https://www.instagram.com/ksirovka/",
+  },
+};
