@@ -11,11 +11,19 @@ import {
   setAdminSession,
 } from "../lib/admin-session.js";
 import {
+  countTvData,
+  getTvDataSettings,
+  purgeRounds,
+  saveTvDataSettings,
+} from "../lib/tv-data.js";
+import {
   adminRoundsQuerySchema,
   hideRoundSchema,
   loginSchema,
   promoPatchSchema,
   promoSchema,
+  tvDataPurgeSchema,
+  tvDataSettingsSchema,
 } from "../schemas/admin.js";
 
 function toDate(value: string | null | undefined): Date | null {
@@ -237,6 +245,72 @@ export async function adminRoutes(app: FastifyInstance) {
       }
 
       return { item };
+    });
+
+    scoped.delete("/admin/rounds/:id", async (request, reply) => {
+      const id = Number((request.params as { id: string }).id);
+      if (!Number.isInteger(id) || id < 1) {
+        return reply.status(400).send({ error: "Neplatné id" });
+      }
+
+      const deleted = await purgeRounds({ scope: "ids", ids: [id] });
+      if (deleted === 0) {
+        return reply.status(404).send({ error: "Kolo nenalezeno" });
+      }
+
+      return reply.status(204).send();
+    });
+
+    scoped.get("/admin/tv-data", async () => {
+      const [settings, counts] = await Promise.all([getTvDataSettings(), countTvData()]);
+      return {
+        settings: {
+          retentionEnabled: settings.retentionEnabled,
+          retentionDays: settings.retentionDays,
+          runHour: settings.runHour,
+          lastPurgeAt: settings.lastPurgeAt?.toISOString() ?? null,
+          lastPurgeDeleted: settings.lastPurgeDeleted,
+          updatedAt: settings.updatedAt.toISOString(),
+        },
+        counts,
+      };
+    });
+
+    scoped.patch("/admin/tv-data", async (request, reply) => {
+      const parsed = tvDataSettingsSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "Validation failed",
+          details: parsed.error.flatten(),
+        });
+      }
+
+      const settings = await saveTvDataSettings(parsed.data);
+      const counts = await countTvData();
+      return {
+        settings: {
+          retentionEnabled: settings.retentionEnabled,
+          retentionDays: settings.retentionDays,
+          runHour: settings.runHour,
+          lastPurgeAt: settings.lastPurgeAt?.toISOString() ?? null,
+          lastPurgeDeleted: settings.lastPurgeDeleted,
+          updatedAt: settings.updatedAt.toISOString(),
+        },
+        counts,
+      };
+    });
+
+    scoped.post("/admin/tv-data/purge", async (request, reply) => {
+      const parsed = tvDataPurgeSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "Validation failed",
+          details: parsed.error.flatten(),
+        });
+      }
+
+      const deleted = await purgeRounds(parsed.data);
+      return { deleted };
     });
   });
 }

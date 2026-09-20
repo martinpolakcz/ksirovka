@@ -8,6 +8,7 @@ import { contentRoutes } from "./routes/content.js";
 import { scorecardRoutes } from "./routes/scorecard.js";
 import { tvRoutes } from "./routes/tv.js";
 import { adminRoutes } from "./routes/admin.js";
+import { startTvDataRetentionJob } from "./lib/tv-data.js";
 
 const app = Fastify({
   logger: true,
@@ -62,6 +63,7 @@ if (config.WEB_DIST) {
 
 try {
   await app.listen({ port: config.API_PORT, host: config.API_HOST });
+  startTvDataRetentionJob(app.log);
 } catch (err) {
   app.log.error(err);
   process.exit(1);

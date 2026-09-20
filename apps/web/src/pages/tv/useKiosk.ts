@@ -1,6 +1,26 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+const WIDE_QUERY = "(min-width: 1024px)";
+
+export function useWideViewport() {
+  const [wide, setWide] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(WIDE_QUERY).matches : true,
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia(WIDE_QUERY);
+    const onChange = () => setWide(media.matches);
+    onChange();
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  return wide;
+}
 
 export function useKiosk() {
+  const wide = useWideViewport();
+
   useEffect(() => {
     document.documentElement.classList.add("tv-kiosk");
 
@@ -27,8 +47,10 @@ export function useKiosk() {
         document.documentElement.classList.add("tv-hide-cursor");
       }, 3000);
     };
-    showCursor();
-    window.addEventListener("mousemove", showCursor);
+    if (wide) {
+      showCursor();
+      window.addEventListener("mousemove", showCursor);
+    }
 
     return () => {
       document.documentElement.classList.remove("tv-kiosk", "tv-hide-cursor");
@@ -37,7 +59,7 @@ export function useKiosk() {
       window.clearTimeout(hideTimer);
       void wake?.release();
     };
-  }, []);
+  }, [wide]);
 }
 
 export function usePrefersReducedMotion() {

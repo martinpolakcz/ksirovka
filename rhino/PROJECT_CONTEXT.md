@@ -2,7 +2,7 @@
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
 > **Stav:** Produkční API+web na VPS běží (`316718a`)  
-> **Poslední aktualizace:** 2026-09-14 17:12
+> **Poslední aktualizace:** 2026-09-20 15:34
 
 ---
 
@@ -26,7 +26,7 @@ Tento soubor je **jediný zdroj pravdy** pro dlouhodobého AI agenta. Každá zm
   - Backend: Node.js, Fastify 5, TypeScript, Drizzle ORM 0.44, Zod. Workspace `@ksirovka/api` v `apps/api`.
   - Databáze & Storage: PostgreSQL 16. Lokálně `postgres:16-alpine` na **3840**. Redis/Valkey 8 na **3841** (lokálně; v API se zatím nepoužívá). Produkce: Postgres v compose na VPS, bez Redis.
   - Mobil: Expo SDK **54**, React Native 0.81.5, Expo Router 6, Zustand, AsyncStorage. Bundle ID `cz.ksirovka.scorecard`.
-  - Ostatní: Docker Compose (lokálně jen DB). Produkce: Caddy + image z GHCR. iOS přes EAS Build / EAS Submit.
+  - Ostatní: Docker Compose (lokálně jen DB). Produkce: Caddy + image z GHCR. iOS přes EAS Build / EAS Submit. Android: package `cz.ksirovka.scorecard`; Play Developer účet zaplacený 2026-09-20, app/listing ještě ne.
 
 ### Repos / kopie (kritické)
 | Cesta | Co to je |
@@ -121,7 +121,21 @@ Migrace jen přidávají. Přejmenování sloupce = dva deploye. Rollback nevrac
    ```
 
 #### iOS Scorecard (EAS → App Store Connect)
-Produkční URL v appce už je `https://ksirovka.martinpolak.cz/api/v1`. Nový build kvůli napojení na VPS **není nutný**, jakmile `/health` a `/api/v1/scorecard/*` zvenčí odpovídají.
+Aktuální: **1.0.0 (5)** v TestFlight internal beta (logo). Build `c6242d1b`, submit `f3bb148c`. Produkční URL `https://ksirovka.martinpolak.cz/api/v1`.
+
+#### Android Scorecard (EAS → Google Play)
+Účet zaplacený 2026-09-20. AAB `d057089d` čeká. Submit blokuje: app v Console + Google Service Account JSON. Playbook: `rhino/android-play-store.md`.
+
+```bash
+cd /Users/martin.polak/Projects/ksirovka-app2/ksirovka-app
+# jen telefon (APK / internal):
+npx eas-cli build --platform android --profile preview
+# obchod (.aab):
+npx eas-cli build --platform android --profile production
+npx eas-cli submit --platform android --profile production
+```
+
+První Play submit = internal testing. Production listing až po Data safety, content rating a privacy URL.
 
 ---
 
@@ -152,8 +166,9 @@ Produkční URL v appce už je `https://ksirovka.martinpolak.cz/api/v1`. Nový b
 | Doména `martinpolak.cz` | Prod API/web | [Doplnit] | [Doplnit] | Subdoména `ksirovka.martinpolak.cz` |
 | Hosting WebSupport | Prod marketing | [Doplnit] | WebSupport | Statika + PHP, bez Node |
 | VPS Netcup | Prod API+web+DB | [Doplnit] | Netcup | `62.83.17.63` |
-| Expo EAS | iOS build/submit | 0 (Free) / [ověřit kvóty] | Karta na expo.dev | |
+| Expo EAS | iOS/Android build | 0 (Free) / [ověřit kvóty] | Karta na expo.dev | |
 | Apple Developer Program | Prod iOS | 99 USD / rok | Apple ID | |
+| Google Play Developer | Prod Android | 25 USD jednorázově | Google účet | Zaplaceno 2026-09-20; app v Console ještě není |
 | **Celkem měsíčně** | | **[Suma — doplnit VPS + hosting]** | | |
 
 ---
@@ -165,15 +180,20 @@ Produkční URL v appce už je `https://ksirovka.martinpolak.cz/api/v1`. Nový b
 - [x] **AAAA** u `ksirovka.martinpolak.cz` = IPv6 VPS; `/health` přes IPv6 vrací `316718a`.
 - [x] **GitHub + CI** — https://github.com/martinpolakcz/ksirovka, image `316718a`.
 - [x] **`server-setup.sh` + první `deploy.sh`** — ověřeno zvenčí, commit sedí.
+- [ ] **Nasadit mazání TV dat + `/tv` mobil** — commit → CI image → `deploy.sh` (migrace `tv_data_settings` jen přidává).
+- [ ] **Nasadit opravu `/tv` pro mobil** — jde ve stejném deployi jako mazání TV dat.
 - [ ] **Otestovat kolo v TestFlight** — sync na `/vysledky` i Žebříčky.
 - [ ] Import obsahu do produkční DB (`import:content`) — homepage z API je zatím prázdná.
-- [ ] App Store listing + Submit for Review (screenshoty, privacy, build 1.0.0 (3)).
+- [ ] App Store listing + Submit for Review (screenshoty, privacy, build 1.0.0 (5)).
+- [x] **Nový iOS/Android EAS build** — 2026-09-20. iOS 1.0.0 (5) v TestFlight (internal beta). Android APK + AAB hotové. Play submit blokuje chybějící Google Service Account.
+- [ ] **Android na Play** — účet zaplacený 2026-09-20. Zbývá: app v Console, service account JSON, `eas submit -p android` (AAB `d057089d`). Playbook: `rhino/android-play-store.md`.
 
 ### 🟡 Střední priorita (Nové funkce / Refaktoring)
+- [ ] **Liquid glass na chromu scorecard** — pin `LiveStandings` + akcí přes `expo-blur`, ať mřížka jamek jede pod lištou. Audit: `rhino/ui-liquid-glass.md`.
 - [ ] Import obsahu do produkční DB (`import:content`) až poběží API.
 - [ ] Staging na VPS (`./scripts/deploy.sh --staging`) s vlastními daty.
 - [ ] Privacy policy stránka.
-- [ ] Android / Google Play.
+- [ ] Android listing v Play Console (screenshoty, Data safety) až po prvním AAB.
 - [ ] Sjednotit pracovní a starší kopii mobilu.
 
 ### 🟢 Nízká priorita / Návrhy (Backlog)
@@ -188,7 +208,9 @@ Produkční URL v appce už je `https://ksirovka.martinpolak.cz/api/v1`. Nový b
 - [ ] **ADMIN_PASSWORD** je vygenerovaný hex v `/opt/ksirovka-deploy/.env` — uložit do vaultu, do gitu ne.
 - [ ] **ksirovka.cz vs martinpolak.cz** — ostré API je na subdoméně (appka to tak má). Apex zůstává na WebSupport, dokud se nerozhodne o přepnutí.
 - [ ] Apple login v EAS: dočasný `EXPO_APP_STORE_AUTH_SERVICE_KEY` (eas-cli#4392).
-- [ ] Privacy / GDPR text pro App Store.
+- [ ] Privacy / GDPR text — blokuje App Store i Google Play.
+- [x] Google Play Developer účet — zaplaceno 2026-09-20 (uživatel). App + service account ještě chybí.
+- [ ] **Liquid glass vs. overlay:** dnešní lišty obsah neoverlayují, jen mu berou výšku. Sklo má smysl až po pinu chromu (scorecard spodní lišta první). Karty na plochém gradientu zatím ne.
 
 ---
 
@@ -197,6 +219,7 @@ Produkční URL v appce už je `https://ksirovka.martinpolak.cz/api/v1`. Nový b
 | ID | Popis chyby | Závažnost | Prostředí | Krok k reprodukci |
 | --- | --- | --- | --- | --- |
 | BUG-04 | Statický FTP web nemá live `/vysledky` | Med | Prod (`ksirovka.cz`) | Otevřít `/vysledky` na ostrém hostingu bez API |
+| BUG-06 | `/tv` na mobilu rozbitý layout (100dvh + 3 sloupce, overflow hidden) | High | Prod mobile | Otevřít `https://ksirovka.martinpolak.cz/tv` v telefonu |
 
 ### Vyřešené chyby (Resolved Bugs Audit)
 | ID | Popis chyby | Datum opravy | Způsob řešení / Commit |
@@ -218,7 +241,7 @@ Produkční URL v appce už je `https://ksirovka.martinpolak.cz/api/v1`. Nový b
   - `/health` → `{"status":"ok","commit":"<tag>"}` musí sedět s `IMAGE_TAG`.
   - Scorecard rate limit: 40 req / 15 min / IP.
   - Záloha: denní dump, ověření počtem `CREATE TABLE` (≥ 12), kopie mimo server (`~/ksirovka-backups`).
-  - TestFlight 1.0.0 (3) vyprší za 90 dní od 2026-09-12.
+  - TestFlight 1.0.0 (5) internal beta (nahráno 2026-09-20); (3) pořád platné.
 
 ---
 
@@ -231,3 +254,13 @@ Mobil (Expo) --POST /api/v1/scorecard/rounds--> Fastify + Postgres (VPS)
 - Idempotence: unikátní `client_round_id`; duplicita vrací `{ success: true, duplicate: true }`.
 - Login v appce je lokální profil (e-mail + jméno v AsyncStorage), ne OIDC.
 - Store build jde na HTTPS `https://ksirovka.martinpolak.cz/api/v1`.
+- TV admin `/admin/kola` maže kola (cascade hráči + jamky). Cron retence běží v procesu API (ne systemd): jednou denně v `runHour` Europe/Prague, maže kola starší než `retentionDays`. Výchozí vypnuto.
+
+---
+
+## 11. Mobilní UI (liquid glass)
+- Obal: `Screen` = `LinearGradient` `#111f19 → #21382d`; `Header` bez výplně.
+- `Card` = `rgba(38,68,53,0.85)` v toku, ne overlay.
+- Jediné místo, kde chrom sedí na obsahu: **scorecard** — `LiveStandings` (0.95) + akční tlačítka pod `ScrollView` (v toku, ne `absolute`).
+- Detail auditu: `rhino/ui-liquid-glass.md`.
+- **Logo (2026-09-20):** motiv tyrkys + oranžový oblouk + tečka. `Logo.tsx` bere `assets/logo-mark.png`. Store ikony v 1.0.0 (5) / Android versionCode 2.

@@ -160,6 +160,16 @@ export const scoreHoleScores = pgTable(
   ],
 );
 
+export const tvDataSettings = pgTable("tv_data_settings", {
+  id: integer("id").primaryKey(),
+  retentionEnabled: boolean("retention_enabled").notNull().default(false),
+  retentionDays: integer("retention_days").notNull().default(30),
+  runHour: integer("run_hour").notNull().default(3),
+  lastPurgeAt: timestamp("last_purge_at"),
+  lastPurgeDeleted: integer("last_purge_deleted").notNull().default(0),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const tvPromos = pgTable(
   "tv_promos",
   {
@@ -202,3 +212,4 @@ export type ScoreRound = typeof scoreRounds.$inferSelect;
 export type ScorePlayer = typeof scorePlayers.$inferSelect;
 export type ScoreHoleScore = typeof scoreHoleScores.$inferSelect;
 export type TvPromo = typeof tvPromos.$inferSelect;
+export type TvDataSettings = typeof tvDataSettings.$inferSelect;

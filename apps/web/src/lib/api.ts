@@ -155,6 +155,31 @@ export interface AdminRound {
   playerNames: string[];
 }
 
+export type AdminTvDataSettingsInput = {
+  retentionEnabled: boolean;
+  retentionDays: number;
+  runHour: number;
+};
+
+export type AdminTvDataPurgeInput =
+  | { scope: "all" }
+  | { scope: "today" }
+  | { scope: "older_than"; days: number }
+  | { scope: "ids"; ids: number[] };
+
+export interface AdminTvData {
+  settings: AdminTvDataSettingsInput & {
+    lastPurgeAt: string | null;
+    lastPurgeDeleted: number;
+    updatedAt: string;
+  };
+  counts: {
+    total: number;
+    today: number;
+    olderThanRetention: number;
+  };
+}
+
 export class AdminAuthError extends Error {
   constructor() {
     super("Nepřihlášen");
@@ -267,5 +292,17 @@ export const api = {
     fetchAdmin<{ item: { id: number; hidden: boolean } }>(`/admin/rounds/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ hidden }),
+    }),
+  deleteAdminRound: (id: number) => fetchAdmin<void>(`/admin/rounds/${id}`, { method: "DELETE" }),
+  getAdminTvData: () => fetchAdmin<AdminTvData>("/admin/tv-data"),
+  saveAdminTvData: (payload: AdminTvDataSettingsInput) =>
+    fetchAdmin<AdminTvData>("/admin/tv-data", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  purgeAdminTvData: (payload: AdminTvDataPurgeInput) =>
+    fetchAdmin<{ deleted: number }>("/admin/tv-data/purge", {
+      method: "POST",
+      body: JSON.stringify(payload),
     }),
 };

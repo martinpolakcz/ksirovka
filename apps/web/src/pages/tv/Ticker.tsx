@@ -21,12 +21,12 @@ export function Ticker({ promos, recent }: TickerProps) {
       : "Zahraj kolo v aplikaci Kšírovka Scorecard a uvidíš se tady na tabuli.";
 
   return (
-    <div className="relative flex h-14 items-center overflow-hidden bg-teal">
-      <div className="z-10 flex h-full shrink-0 items-center bg-orange px-4 text-lg font-semibold text-white">
+    <div className="relative flex h-11 items-center overflow-hidden bg-teal lg:h-14">
+      <div className="z-10 flex h-full shrink-0 items-center bg-orange px-3 text-sm font-semibold text-white lg:px-4 lg:text-lg">
         LIVE
       </div>
       <div className="tv-ticker-mask relative min-w-0 flex-1">
-        <div className="tv-ticker-track flex w-max gap-16 whitespace-nowrap px-8 text-lg leading-normal text-white">
+        <div className="tv-ticker-track flex w-max gap-16 whitespace-nowrap px-6 text-sm leading-normal text-white lg:px-8 lg:text-lg">
           <span>{line}</span>
           <span aria-hidden>{line}</span>
         </div>

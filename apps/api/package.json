@@ -11,7 +11,7 @@
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx src/db/seed.ts",
     "import:content": "tsx scripts/import-content.ts",
-    "test": "tsx --test src/lib/scorecard.test.ts",
+    "test": "tsx --test src/lib/scorecard.test.ts src/lib/tv-data.test.ts",
     "migrate": "node dist/migrate.js"
   },
   "dependencies": {

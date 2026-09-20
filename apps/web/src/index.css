@@ -257,7 +257,15 @@
 
 .tv-kiosk,
 .tv-kiosk body {
-  overflow: hidden;
+  overflow-x: clip;
+}
+
+@media (min-width: 1024px) {
+  .tv-kiosk,
+  .tv-kiosk body {
+    height: 100%;
+    overflow: hidden;
+  }
 }
 
 .tv-kiosk {

@@ -27,7 +27,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
   return (
     <div className="flex min-w-0 flex-col justify-end">
       <p className="text-sm font-semibold text-teal">{label}</p>
-      <p className="mt-1 text-5xl font-semibold leading-none text-ink xl:text-6xl">{value}</p>
+      <p className="mt-1 text-3xl font-semibold leading-none text-ink lg:text-5xl xl:text-6xl">{value}</p>
       {hint && <p className="mt-2 truncate text-sm text-ink/45">{hint}</p>}
     </div>
   );

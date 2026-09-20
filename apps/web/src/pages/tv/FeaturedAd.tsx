@@ -10,7 +10,7 @@ type FeaturedAdProps = {
 
 export function FeaturedAd({ promo, reducedMotion }: FeaturedAdProps) {
   return (
-    <div className="tv-card relative min-h-0 flex-1 overflow-hidden">
+    <div className="tv-card relative min-h-52 overflow-hidden lg:min-h-0 lg:flex-1">
       <AnimatePresence mode="wait">
         {promo ? (
           <motion.article
@@ -19,7 +19,7 @@ export function FeaturedAd({ promo, reducedMotion }: FeaturedAdProps) {
             animate={{ opacity: 1, x: 0 }}
             exit={reducedMotion ? undefined : { opacity: 0, x: -24 }}
             transition={{ duration: 0.45 }}
-            className="absolute inset-0"
+            className="relative min-h-52 lg:absolute lg:inset-0"
           >
             {promo.imageUrl && (
               <img
@@ -33,7 +33,7 @@ export function FeaturedAd({ promo, reducedMotion }: FeaturedAdProps) {
               <p className="text-sm font-semibold text-orange">
                 {CATEGORY_LABELS[promo.category]}
               </p>
-              <h3 className="mt-1 font-display text-3xl font-semibold text-white xl:text-4xl">{promo.title}</h3>
+              <h3 className="mt-1 font-display text-2xl font-semibold text-white lg:text-3xl xl:text-4xl">{promo.title}</h3>
               <p className="mt-2 max-w-md text-sm text-white/85 xl:text-base">{promo.message}</p>
             </div>
           </motion.article>

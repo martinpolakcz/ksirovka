@@ -24,13 +24,13 @@ export function LegendChallenge({ gameType, bestTotal, bestName }: LegendChallen
   return (
     <div className="flex h-full min-h-0 flex-col justify-end">
       <p className="text-sm font-semibold text-teal">Výzva legend</p>
-      <p className="mt-2 font-display text-4xl font-semibold leading-tight text-ink xl:text-5xl">
+      <p className="mt-2 font-display text-2xl font-semibold leading-tight text-ink lg:text-4xl xl:text-5xl">
         {legend.name} · {legend.total}
       </p>
       <p className="mt-1 text-sm leading-normal text-ink/40">
         {legend.title} · {GAME_LABELS[gameType]}
       </p>
-      <p className="mt-4 font-display text-2xl font-semibold leading-normal text-orange xl:text-3xl">
+      <p className="mt-3 font-display text-xl font-semibold leading-normal text-orange lg:mt-4 lg:text-2xl xl:text-3xl">
         {line}
       </p>
     </div>
