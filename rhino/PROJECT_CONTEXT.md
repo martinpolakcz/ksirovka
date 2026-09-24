@@ -137,10 +137,10 @@ curl -fsS https://ksirovka.martinpolak.cz/health
 Postgres **nerecreatuj** kvůli env — `POSTGRES_PASSWORD` platí jen při prvním startu volume. Do API se dostane jen to, co je ve `deploy/docker-compose.yml` u `environment:` (`PG_PASSWORD`, `ADMIN_*`, `CORS_ORIGIN`, `LEGACY_SITE_URL`).
 
 #### iOS Scorecard (EAS → App Store Connect)
-Aktuální: **1.0.0 (7)** v TestFlight (název na ikoně **Kšírovka**, i18n). Build `9ccdda44`, submit `409d2554` finished 2026-09-20 21:37. Produkční URL `https://ksirovka.martinpolak.cz/api/v1`. Rollback iOS = build 5 `c6242d1b`.
+Aktuální ve frontě: **1.0.0 (8)** `72635b31` + auto-submit `fde82224` (header počasí + jazyk pod status bar). V TestFlight pořád **1.0.0 (7)** `9ccdda44`. Produkční URL `https://ksirovka.martinpolak.cz/api/v1`. Rollback iOS = build 7 nebo 5 `c6242d1b`.
 
 #### Android Scorecard (EAS → Google Play)
-Účet schválený 2026-09-23. AAB **1.0.0 (5)** je v Play Console (bundle explorer, 0 vydání). Ještě není přiřazený k release. `eas submit` pořád bez Service Account JSON. Playbook: `rhino/android-play-store.md`.
+Účet schválený 2026-09-23. Nový AAB **1.0.0 (6)** ve frontě `7b48d674` (header počasí). Preview APK `57338960`. V Console pořád AAB **1.0.0 (5)**. `eas submit` pořád bez Service Account JSON. Playbook: `rhino/android-play-store.md`.
 
 ```bash
 cd /Users/martin.polak/Projects/ksirovka-app2/ksirovka-app
@@ -201,7 +201,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **TV reklamy z ksirovka.cz** — 2026-09-20. 15 záznamů v `tv_promos` lokálně i na prod (8 původních + 7 z hero/dlaždic). Image pořád `9afc089`, jen data. `npm run db:seed-tv` doplní chybějící.
 - [ ] Import obsahu do produkční DB (`import:content`) — homepage z API je zatím prázdná.
 - [x] **Mobil: název na ikoně Kšírovka** — 2026-09-20. `expo.name` + `CFBundleDisplayName` + Android `label` = Kšírovka. iOS 1.0.0 (7) v TestFlight (`9ccdda44` / submit `409d2554`). Android AAB `414162cf` + APK `926c8d8c`. Play submit pořád bez service account.
-- [ ] App Store listing + Submit for Review (screenshoty, privacy). Build teď 1.0.0 (7).
+- [ ] App Store listing + Submit for Review (screenshoty, privacy). TestFlight 1.0.0 (7); ve frontě 1.0.0 (8).
 - [x] **Nový iOS/Android EAS build** — 2026-09-20. iOS 1.0.0 (5) v TestFlight (internal beta). Android APK + AAB hotové. Play submit blokuje chybějící Google Service Account.
 - [ ] **Android na Play** — AAB 1.0.0 (5) je v knihovně Console. Druhý upload stejného souboru padá („kód verze 5 už byl použit“) — přidat z knihovny, ne nahrávat znovu. Listing pořád chybí.
 
