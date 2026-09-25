@@ -2,7 +2,7 @@
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
 > **Stav:** Produkční API+web na VPS běží (`9b01dcf`)  
-> **Poslední aktualizace:** 2026-09-25 15:17
+> **Poslední aktualizace:** 2026-09-25 15:20
 
 ---
 
@@ -105,8 +105,12 @@ Migrace jen přidávají. Přejmenování sloupce = dva deploye. Rollback nevrac
    ./scripts/server-setup.sh
    # na serveru doplnit /opt/ksirovka-deploy/.env (PG_PASSWORD hex, ADMIN_*)
    # docker login ghcr.io na VPS
-   ./scripts/deploy.sh          # aktuální commit
+   ./scripts/deploy.sh          # aktuální commit, image už musí být v registru
    ./scripts/deploy.sh a1b2c3d  # konkrétní tag
+   ./scripts/reload-and-deploy.sh
+   # čistý main: restart Expo Go na LAN, push, počkat na CI, záloha, deploy, /health
+   # --eas navíc spustí iOS + Android AAB + preview APK (zvedne číslo verze)
+   # tlačítko v Dev Manageru u projektu Kšírovka: „Expo Go + nasadit“
    ```
 3. **Healthcheck & Verification:**
    ```bash
