@@ -10,6 +10,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx src/db/seed.ts",
+    "db:seed-tv": "tsx src/db/seed-tv-promos.ts",
     "import:content": "tsx scripts/import-content.ts",
     "test": "tsx --test src/lib/scorecard.test.ts src/lib/tv-data.test.ts",
     "migrate": "node dist/migrate.js"

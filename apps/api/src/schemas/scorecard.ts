@@ -48,6 +48,12 @@ export const submitRoundSchema = z.object({
     .optional(),
 });
 
+export const upsertProfileSchema = z.object({
+  email: z.string().email().max(255),
+  name: z.string().trim().min(2).max(80),
+  nickname: z.string().trim().min(2).max(32),
+});
+
 export const statsQuerySchema = z.object({
   period: z.enum(statPeriods).default("week"),
   gameType: z.enum(gameTypes).optional(),

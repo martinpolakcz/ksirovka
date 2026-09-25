@@ -13,4 +13,12 @@
 		X-Frame-Options SAMEORIGIN
 		-X-Powered-By
 	}
+
+	# Náhled TV tabule v iframe na martinpolak.cz (freelancer portál).
+	@tv path /tv /tv/*
+	header @tv {
+		-X-Frame-Options
+		-Cross-Origin-Resource-Policy
+		Content-Security-Policy "frame-ancestors 'self' https://martinpolak.cz https://www.martinpolak.cz"
+	}
 }

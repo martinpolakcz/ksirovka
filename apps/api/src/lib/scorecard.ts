@@ -12,6 +12,21 @@ export function normalizePlayerName(name: string): string {
   return name.trim().replace(/\s+/g, " ").toLocaleLowerCase("cs");
 }
 
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+export function nicknameHeldByOther(
+  requesterEmail: string,
+  holders: Array<{ email: string | null | undefined }>,
+): boolean {
+  const me = normalizeEmail(requesterEmail);
+  return holders.some((holder) => {
+    const email = holder.email?.trim().toLowerCase();
+    return Boolean(email && email !== me);
+  });
+}
+
 function pad(value: number): string {
   return String(value).padStart(2, "0");
 }

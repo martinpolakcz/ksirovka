@@ -11,6 +11,7 @@
     "build:webhosting": "npm run sync:static-content && node scripts/package-webhosting.mjs",
     "db:migrate": "npm run db:migrate -w @ksirovka/api",
     "db:seed": "npm run db:seed -w @ksirovka/api",
+    "db:seed-tv": "npm run db:seed-tv -w @ksirovka/api",
     "import:content": "npm run import:content -w @ksirovka/api",
     "sync:static-content": "node scripts/sync-static-content.mjs",
     "refresh:content": "npm run import:content && npm run sync:static-content",

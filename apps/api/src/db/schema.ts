@@ -141,6 +141,17 @@ export const scorePlayers = pgTable(
   ],
 );
 
+export const scoreProfiles = pgTable("score_profiles", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  emailNormalized: text("email_normalized").notNull().unique(),
+  name: text("name").notNull(),
+  nickname: text("nickname").notNull(),
+  nicknameNormalized: text("nickname_normalized").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const scoreHoleScores = pgTable(
   "score_hole_scores",
   {
@@ -208,6 +219,7 @@ export type Page = typeof pages.$inferSelect;
 export type Article = typeof articles.$inferSelect;
 export type HeroSlide = typeof heroSlides.$inferSelect;
 export type ActivityTile = typeof activityTiles.$inferSelect;
+export type ScoreProfile = typeof scoreProfiles.$inferSelect;
 export type ScoreRound = typeof scoreRounds.$inferSelect;
 export type ScorePlayer = typeof scorePlayers.$inferSelect;
 export type ScoreHoleScore = typeof scoreHoleScores.$inferSelect;

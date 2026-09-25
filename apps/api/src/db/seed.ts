@@ -6,6 +6,7 @@ import {
   activityTiles,
   tvPromos,
 } from "./schema.js";
+import { defaultTvPromos } from "../data/tv-promos.js";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -157,81 +158,19 @@ async function seed() {
 
   const existingPromos = await db.select({ id: tvPromos.id }).from(tvPromos).limit(1);
   if (existingPromos.length === 0) {
-    await db.insert(tvPromos).values([
-      {
-        slot: "ticker",
-        category: "golf",
-        title: "Driving range",
-        message: "Driving range otevřen — přijď si odpálit pár míčů ještě dnes.",
-        href: "/driving-range",
-        imageUrl: "https://ksirovka.cz/user_uploads/submenu/obrazky/golf.jpg",
-        sortOrder: 0,
-      },
-      {
-        slot: "ticker",
-        category: "golf",
-        title: "Golfová akademie",
-        message: "Začni s golfem na Kšírovce. Trenéři, 6jamek a junior akademie.",
-        href: "/golfova-akademie",
-        imageUrl: "https://ksirovka.cz/user_uploads/submenu/obrazky/golf.jpg",
-        sortOrder: 1,
-      },
-      {
-        slot: "ticker",
-        category: "hopsalkov",
-        title: "Hopsálkov",
-        message: "Trampolíny, ninja dráha a šlapací autíčka — park sportu a zábavy.",
-        href: "/park-sportu-a-zabavy",
-        imageUrl: "https://ksirovka.cz/user_uploads/Hopsálkov/IVAH9999 (2).JPG",
-        sortOrder: 2,
-      },
-      {
-        slot: "ticker",
-        category: "hopsalkov",
-        title: "Narozeniny v Hopsálkově",
-        message: "Oslava, ze které děti nepůjdou. Rezervuj termín v Hopsálkově.",
-        href: "/narozeninove-oslavy",
-        imageUrl: "https://ksirovka.cz/user_uploads/Hopsálkov/IVAH9999 (2).JPG",
-        sortOrder: 3,
-      },
-      {
-        slot: "featured",
-        category: "golf",
-        title: "Zahraj si golf",
-        message: "Driving range, akademie i rezervace online. Dnes je ideální den na první ránu.",
-        href: "https://eshop.ksirovka.cz/rezervace",
-        imageUrl: "https://ksirovka.cz/user_uploads/Golf/web_R3X_3627.jpg",
-        sortOrder: 0,
-      },
-      {
-        slot: "featured",
-        category: "hopsalkov",
-        title: "Skoč do Hopsálkova",
-        message: "Venkovní zábavní park pro celou partu. Trampolíny, ninja a spousta smíchu.",
-        href: "/park-sportu-a-zabavy",
-        imageUrl: "https://ksirovka.cz/user_uploads/Hopsálkov/IVAH9999 (2).JPG",
-        sortOrder: 1,
-      },
-      {
-        slot: "ticker",
-        category: "venue",
-        title: "Dárkové poukazy",
-        message: "Golf, Hopsálkov i fotbalgolf — poukaz koupíš na e-shopu ksirovka.cz.",
-        href: "https://eshop.ksirovka.cz/",
-        imageUrl: "https://ksirovka.cz/uploads/img-891822-8e9a09db84fbe15c61d8ac3c27f2b315.jpg",
-        sortOrder: 4,
-      },
-      {
-        slot: "featured",
-        category: "venue",
-        title: "Daruj voucher",
-        message: "Skvělý dárek pro milovníka pohybu. Koupíš ho na e-shopu, uplatní na recepci.",
-        href: "https://eshop.ksirovka.cz/",
-        imageUrl: "https://ksirovka.cz/uploads/img-891822-8e9a09db84fbe15c61d8ac3c27f2b315.jpg",
-        sortOrder: 2,
-      },
-    ]);
-    console.log("Seeded default TV promos");
+    await db.insert(tvPromos).values(
+      defaultTvPromos.map((promo) => ({
+        slot: promo.slot,
+        category: promo.category,
+        title: promo.title,
+        message: promo.message,
+        href: promo.href,
+        imageUrl: promo.imageUrl,
+        sortOrder: promo.sortOrder,
+        active: true,
+      })),
+    );
+    console.log(`Seeded ${defaultTvPromos.length} default TV promos`);
   }
 
   console.log(

@@ -1,17 +1,20 @@
 import type { FastifyInstance } from "fastify";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { scoreHoleScores, scorePlayers, scoreRounds } from "../db/schema.js";
+import { scoreHoleScores, scorePlayers, scoreProfiles, scoreRounds } from "../db/schema.js";
 import { config } from "../config.js";
 import {
   HOLE_PARS,
   getPeriodBounds,
+  nicknameHeldByOther,
+  normalizeEmail,
   normalizePlayerName,
   periodTruncUnit,
 } from "../lib/scorecard.js";
 import {
   statsQuerySchema,
   submitRoundSchema,
+  upsertProfileSchema,
   type GameType,
 } from "../schemas/scorecard.js";
 
@@ -124,6 +127,85 @@ export async function scorecardRoutes(app: FastifyInstance) {
         }
         throw error;
       }
+    },
+  );
+
+  app.post(
+    "/scorecard/profile",
+    {
+      config: {
+        rateLimit: {
+          max: config.SCORECARD_RATE_LIMIT_MAX,
+          timeWindow: config.SCORECARD_RATE_LIMIT_WINDOW_MS,
+          keyGenerator: (req) => `scorecard-profile:${req.ip}`,
+        },
+      },
+    },
+    async (request, reply) => {
+      const parsed = upsertProfileSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "Validation failed",
+          details: parsed.error.flatten(),
+        });
+      }
+
+      const email = parsed.data.email.trim();
+      const name = parsed.data.name.trim();
+      const nickname = parsed.data.nickname.trim();
+      const emailNormalized = normalizeEmail(email);
+      const nicknameNormalized = normalizePlayerName(nickname);
+
+      const [byNickname] = await db
+        .select({ emailNormalized: scoreProfiles.emailNormalized })
+        .from(scoreProfiles)
+        .where(eq(scoreProfiles.nicknameNormalized, nicknameNormalized))
+        .limit(1);
+
+      if (byNickname && byNickname.emailNormalized !== emailNormalized) {
+        return reply.status(409).send({ error: "nickname_taken" });
+      }
+
+      const usedInRounds = await db
+        .select({ email: scoreRounds.submittedByEmail })
+        .from(scorePlayers)
+        .innerJoin(scoreRounds, eq(scorePlayers.roundId, scoreRounds.id))
+        .where(eq(scorePlayers.nameNormalized, nicknameNormalized))
+        .limit(40);
+
+      if (nicknameHeldByOther(email, usedInRounds)) {
+        return reply.status(409).send({ error: "nickname_taken" });
+      }
+
+      const now = new Date();
+      const [existing] = await db
+        .select({ id: scoreProfiles.id })
+        .from(scoreProfiles)
+        .where(eq(scoreProfiles.emailNormalized, emailNormalized))
+        .limit(1);
+
+      if (existing) {
+        await db
+          .update(scoreProfiles)
+          .set({
+            email,
+            name,
+            nickname,
+            nicknameNormalized,
+            updatedAt: now,
+          })
+          .where(eq(scoreProfiles.id, existing.id));
+      } else {
+        await db.insert(scoreProfiles).values({
+          email,
+          emailNormalized,
+          name,
+          nickname,
+          nicknameNormalized,
+        });
+      }
+
+      return { success: true, nickname };
     },
   );
 
