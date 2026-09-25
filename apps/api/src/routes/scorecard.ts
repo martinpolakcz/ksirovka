@@ -12,6 +12,7 @@ import {
   periodTruncUnit,
 } from "../lib/scorecard.js";
 import {
+  lookupProfileQuerySchema,
   statsQuerySchema,
   submitRoundSchema,
   upsertProfileSchema,
@@ -206,6 +207,45 @@ export async function scorecardRoutes(app: FastifyInstance) {
       }
 
       return { success: true, nickname };
+    },
+  );
+
+  app.get(
+    "/scorecard/profile",
+    {
+      config: {
+        rateLimit: {
+          max: config.SCORECARD_RATE_LIMIT_MAX,
+          timeWindow: config.SCORECARD_RATE_LIMIT_WINDOW_MS,
+          keyGenerator: (req) => `scorecard-profile-lookup:${req.ip}`,
+        },
+      },
+    },
+    async (request, reply) => {
+      const parsed = lookupProfileQuerySchema.safeParse(request.query);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "Validation failed",
+          details: parsed.error.flatten(),
+        });
+      }
+
+      const emailNormalized = normalizeEmail(parsed.data.email);
+      const [profile] = await db
+        .select({
+          email: scoreProfiles.email,
+          name: scoreProfiles.name,
+          nickname: scoreProfiles.nickname,
+        })
+        .from(scoreProfiles)
+        .where(eq(scoreProfiles.emailNormalized, emailNormalized))
+        .limit(1);
+
+      if (!profile) {
+        return reply.status(404).send({ error: "not_found" });
+      }
+
+      return profile;
     },
   );
 

@@ -1,6 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { normalizePlayerName, getPeriodBounds, nicknameHeldByOther } from "./scorecard.js";
+import { normalizeEmail, normalizePlayerName, getPeriodBounds, nicknameHeldByOther } from "./scorecard.js";
+import { lookupProfileQuerySchema } from "../schemas/scorecard.js";
+
+
+test("normalizeEmail je lowercase a bez mezer", () => {
+  assert.equal(normalizeEmail("  A@Ksirovka.CZ "), "a@ksirovka.cz");
+});
+
+test("lookupProfileQuerySchema bere platný e-mail", () => {
+  assert.equal(lookupProfileQuerySchema.safeParse({ email: "ja@ksirovka.cz" }).success, true);
+  assert.equal(lookupProfileQuerySchema.safeParse({ email: "neplatny" }).success, false);
+});
 
 test("normalizePlayerName slučuje mezery a převede na malá písmena", () => {
   assert.equal(normalizePlayerName("  Jan  Novák "), "jan novák");

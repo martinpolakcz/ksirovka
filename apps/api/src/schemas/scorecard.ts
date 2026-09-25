@@ -54,6 +54,10 @@ export const upsertProfileSchema = z.object({
   nickname: z.string().trim().min(2).max(32),
 });
 
+export const lookupProfileQuerySchema = z.object({
+  email: z.string().email().max(255),
+});
+
 export const statsQuerySchema = z.object({
   period: z.enum(statPeriods).default("week"),
   gameType: z.enum(gameTypes).optional(),

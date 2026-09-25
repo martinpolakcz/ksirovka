@@ -2,7 +2,7 @@
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
 > **Stav:** Produkční API+web na VPS běží (`e79e54e`)  
-> **Poslední aktualizace:** 2026-09-25 12:44
+> **Poslední aktualizace:** 2026-09-25 15:11
 
 ---
 
@@ -141,7 +141,7 @@ Postgres **nerecreatuj** kvůli env — `POSTGRES_PASSWORD` platí jen při prvn
 Aktuální IPA ve stavbě: **1.0.0 (9)** `1962b997` (2026-09-25 12:41), auto-submit `d0106f59`. Předchozí **1.0.0 (8)** `72635b31` / submit `fde82224`. V TestFlight zatím **1.0.0 (7)** `9ccdda44`, dokud Apple 8/9 nezpracuje. Produkční URL `https://ksirovka.martinpolak.cz/api/v1`. Rollback iOS = build 8, případně 7.
 
 #### Android Scorecard (EAS → Google Play)
-Účet schválený 2026-09-23. AAB ve stavbě: **1.0.0 (7)** `8ef4aa05` (2026-09-25 12:41). Preview APK `3b30d1fc`. Hotový AAB **1.0.0 (6)** `7b48d674`. V Play Console pořád jen AAB **1.0.0 (5)** — `eas submit` bez Service Account JSON. Playbook: `rhino/android-play-store.md`.
+Účet schválený 2026-09-23. AAB **1.0.0 (7)** `8ef4aa05` je v Play Console (uživatel nahrál 2026-09-25). Console hlásí upozornění: chybí R8/ProGuard mapping — u Expo/RN to není blocker, jen horší čtení native pádů. Změna katalogu zařízení je informační. Preview APK `3b30d1fc`. Starší AAB **1.0.0 (6)** `7b48d674`. `eas submit` pořád bez Service Account JSON. Playbook: `rhino/android-play-store.md`.
 
 ```bash
 cd /Users/martin.polak/Projects/ksirovka-app2/ksirovka-app
@@ -205,7 +205,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Mobil: název na ikoně Kšírovka** — 2026-09-20. `expo.name` + `CFBundleDisplayName` + Android `label` = Kšírovka. iOS 1.0.0 (7) v TestFlight (`9ccdda44` / submit `409d2554`). Android AAB `414162cf` + APK `926c8d8c`. Play submit pořád bez service account.
 - [ ] App Store listing + Submit for Review (screenshoty, privacy). IPA 1.0.0 (9) ve stavbě; TestFlight ještě 1.0.0 (7), dokud Apple 8/9 nezpracuje.
 - [x] **Nový iOS/Android EAS build** — 2026-09-20. iOS 1.0.0 (5) v TestFlight (internal beta). Android APK + AAB hotové. Play submit blokuje chybějící Google Service Account.
-- [ ] **Android na Play** — AAB 1.0.0 (5) je v knihovně Console. Druhý upload stejného souboru padá („kód verze 5 už byl použit“) — přidat z knihovny, ne nahrávat znovu. Listing pořád chybí.
+- [ ] **Android na Play** — AAB **1.0.0 (7)** je v knihovně Console (2026-09-25). Upozornění bez mapping souboru ignorovat. Listing / Data safety / privacy URL pořád chybí.
 
 ### 🟡 Střední priorita (Nové funkce / Refaktoring)
 - [x] **Mobil: mezera tlačítek + i18n** — 2026-09-20 v `ksirovka-app2`. Mezera (`gap`) mezi Uložit profil / Odhlásit se i u stacked tlačítek na about/results/scorecard. Jazyky cs/sk/en/de/pl/vi, detekce zařízení + picker, persist `locale`.
@@ -214,6 +214,9 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Mobil: aktivní kolo na home** — 2026-09-25. Po návratu ze scorecard: Pokračovat + Nové kolo + Zrušit. Zrušit/nové se ptá Uložit (do historie) nebo Vyskočit (zahodit). `activeRound` se persistuje.
 - [x] **Mobil: hráč 1 z profilu** — 2026-09-25. Nové kolo předvyplní přezdívku (nebo jméno) do hráče 1.
 - [x] **Mobil: povinný profil + přezdívka** — 2026-09-25. Login má e-mail, jméno, přezdívku. Bez uloženého profilu redirect na `/login`, zpět z login nejde. Stále lokální profil, ne serverový účet.
+- [x] **Mobil: zůstat přihlášený** — 2026-09-25. Profil je jen v persist store `ksirovka-scorecard`. Zápis do AsyncStorage začne až po hydrataci, ať start nepřepíše profil prázdným stavem. Starý klíč `ksirovka-saved-profile` se při prvním startu jednou přenese a smaže.
+- [x] **Mobil: přezdívka podle e-mailu** — 2026-09-25. Po odhlášení e-mail zůstane. `GET /api/v1/scorecard/profile?email=` dotáhne jméno a přezdívku z `score_profiles`. Nový e-mail pole nevyplní. Na prod ještě nenasazeno.
+- [x] **Mobil: Můj profil jako tlačítko** — 2026-09-25. Na home je stejný secondary styl jako Žebříčky a Historie, ne průhledný ghost text.
 - [x] **Unikátní přezdívka** — 2026-09-25. `POST /api/v1/scorecard/profile` + tabulka `score_profiles` (unique `nickname_normalized`). Stejný e-mail smí svou přezdívku měnit. Cizí přezdívka nebo jméno z cizího odeslaného kola = 409. Mobil bez on-line uložení nepustí. Migrace `0004`. Na prod v `e79e54e` (ověřeno: prázdný POST vrací 400 validation).
 - [x] **Nové kolo: lepicí start** — 2026-09-25. Tlačítko Začít kolo je pořád dole, typ/formát/hráči se srolují.
 - [x] **Scorecard: zápis + potvrzení jamky** — 2026-09-25. Skóre je hned nahoře, jamky jako tečky. Par je jen návrh; na pořadí a do kola se zapíše až **Potvrdit jamku**. Zrušit je text pod tlačítkem nad safe area, ne uříznuté.
@@ -221,7 +224,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [ ] Import obsahu do produkční DB (`import:content`) až poběží API.
 - [ ] Staging na VPS (`./scripts/deploy.sh --staging`) s vlastními daty.
 - [ ] Privacy policy stránka.
-- [ ] Android listing v Play Console (screenshoty, Data safety) až po prvním AAB.
+- [ ] Android listing v Play Console (screenshoty, Data safety) — AAB 7 už je nahraný.
 - [ ] Sjednotit pracovní a starší kopii mobilu.
 
 ### 🟢 Nízká priorita / Návrhy (Backlog)
