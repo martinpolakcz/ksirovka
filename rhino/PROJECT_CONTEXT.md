@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`9afc089`)  
-> **Poslední aktualizace:** 2026-09-25 12:39
+> **Stav:** Produkční API+web na VPS běží (`e79e54e`)  
+> **Poslední aktualizace:** 2026-09-25 12:44
 
 ---
 
@@ -61,12 +61,13 @@ Expo účet: `martinpolak` (`martin.polak.cz@gmail.com`). EAS projekt: `@martinp
   - Mobil v releasu volá `https://ksirovka.martinpolak.cz/api/v1` (není potřeba nový TestFlight build, jakmile API na téhle URL žije).
   - App Store Connect: Apple ID **6811373052**.
 - **Infrastruktura:** Docker Compose v `/opt/ksirovka-deploy`: Caddy :80/:443, `ksirovka-api` (jeden image z GHCR), `ksirovka-postgres`. Image staví CI, tag = krátký git commit. Rollback = starší tag, bez buildu na serveru.
-- **DNS (ověřeno 2026-09-14 17:11):**
-  - `ksirovka.martinpolak.cz` **A = 62.83.17.63**.
-  - **AAAA = `2a0a:4cc0:61:4215:c477:34ff:feb2:9147`** (IPv6 VPS). `/health` přes `-6` vrací `9afc089`.
+- **DNS (ověřeno 2026-09-25 12:44):**
+  - `ksirovka.martinpolak.cz` **A = 62.83.17.63**. `/health` přes IPv4 = `e79e54e`.
+  - **AAAA = `2a0a:4cc0:61:4215:c477:34ff:feb2:9147`**. Z VPS `/health` přes `-6` = `e79e54e`. Z notebooku IPv6 timeout (lokální síť, ne VPS).
 - **SSH:** `$HOME/.ssh/netcup_ksirovka_ed25519` → `root@62.83.17.63` (Debian 13). Docker nainstalován `server-setup.sh`.
-- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `9afc089`, CI success, image `ghcr.io/martinpolakcz/ksirovka:9afc089`.
-- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` A i AAAA i `APP_COMMIT` = `9afc089` (ověřeno 2026-09-20 15:38). Záloha před deployem `ksirovka-20260920-133722.sql.gz` (13 tabulek). Migrace přidala `tv_data_settings` (cron vypnutý). Rollback = `316718a`.
+- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `e79e54e`, CI success, image `ghcr.io/martinpolakcz/ksirovka:e79e54e`.
+- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` A i `APP_COMMIT` = `e79e54e` (ověřeno 2026-09-25 12:44). Záloha před deployem `ksirovka-20260925-104312.sql.gz` (14 tabulek). Migrace `0004` přidala `score_profiles`. Rollback = `9afc089`.
+- **Lokálně (2026-09-25):** Colima znovu nastartovaná. Postgres volume byl plný (panic `No space left`); po `docker image prune -af` (~4.8 GB) je healthy, migrace `0004` aplikovaná, API na `:3801`. Expo Go Metro LAN `exp://192.168.1.37:8081`.
 
 Jediné místo s IP a doménami: `deploy/target.env`.
 
@@ -137,10 +138,10 @@ curl -fsS https://ksirovka.martinpolak.cz/health
 Postgres **nerecreatuj** kvůli env — `POSTGRES_PASSWORD` platí jen při prvním startu volume. Do API se dostane jen to, co je ve `deploy/docker-compose.yml` u `environment:` (`PG_PASSWORD`, `ADMIN_*`, `CORS_ORIGIN`, `LEGACY_SITE_URL`).
 
 #### iOS Scorecard (EAS → App Store Connect)
-Aktuální IPA: **1.0.0 (8)** `72635b31` finished 2026-09-24 21:33; auto-submit `fde82224` ve frontě na TestFlight. V TestFlight pořád **1.0.0 (7)** `9ccdda44`, dokud Apple build 8 nezpracuje. Produkční URL `https://ksirovka.martinpolak.cz/api/v1`. Rollback iOS = build 7.
+Aktuální IPA ve stavbě: **1.0.0 (9)** `1962b997` (2026-09-25 12:41), auto-submit `d0106f59`. Předchozí **1.0.0 (8)** `72635b31` / submit `fde82224`. V TestFlight zatím **1.0.0 (7)** `9ccdda44`, dokud Apple 8/9 nezpracuje. Produkční URL `https://ksirovka.martinpolak.cz/api/v1`. Rollback iOS = build 8, případně 7.
 
 #### Android Scorecard (EAS → Google Play)
-Účet schválený 2026-09-23. AAB **1.0.0 (6)** `7b48d674` finished 2026-09-24 22:29: [artifact](https://expo.dev/artifacts/eas/D_0rh1OFamJVGjUk0co0nTMPW2cltwOqapKl9ZLHY5I.aab). Preview APK `57338960` (to není AAB). V Play Console pořád jen AAB **1.0.0 (5)** — `eas submit` bez Service Account JSON. Playbook: `rhino/android-play-store.md`.
+Účet schválený 2026-09-23. AAB ve stavbě: **1.0.0 (7)** `8ef4aa05` (2026-09-25 12:41). Preview APK `3b30d1fc`. Hotový AAB **1.0.0 (6)** `7b48d674`. V Play Console pořád jen AAB **1.0.0 (5)** — `eas submit` bez Service Account JSON. Playbook: `rhino/android-play-store.md`.
 
 ```bash
 cd /Users/martin.polak/Projects/ksirovka-app2/ksirovka-app
@@ -197,11 +198,12 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **GitHub + CI** — https://github.com/martinpolakcz/ksirovka, image `316718a`.
 - [x] **`server-setup.sh` + první `deploy.sh`** — ověřeno zvenčí, commit sedí.
 - [x] **Nasadit `9afc089`** — `/tv` mobil + mazání kol. `/health` A i AAAA = `9afc089`. Cron retence na prod vypnutý.
+- [x] **Nasadit `e79e54e`** — 2026-09-25. Unikátní přezdívky (`score_profiles` + `POST /scorecard/profile`). `/health` IPv4 i z VPS IPv6 = `e79e54e`. Záloha `ksirovka-20260925-104312.sql.gz`. Rollback = `9afc089`.
 - [ ] **Otestovat kolo v TestFlight** — sync na `/vysledky` i Žebříčky.
 - [x] **TV reklamy z ksirovka.cz** — 2026-09-20. 15 záznamů v `tv_promos` lokálně i na prod (8 původních + 7 z hero/dlaždic). Image pořád `9afc089`, jen data. `npm run db:seed-tv` doplní chybějící.
 - [ ] Import obsahu do produkční DB (`import:content`) — homepage z API je zatím prázdná.
 - [x] **Mobil: název na ikoně Kšírovka** — 2026-09-20. `expo.name` + `CFBundleDisplayName` + Android `label` = Kšírovka. iOS 1.0.0 (7) v TestFlight (`9ccdda44` / submit `409d2554`). Android AAB `414162cf` + APK `926c8d8c`. Play submit pořád bez service account.
-- [ ] App Store listing + Submit for Review (screenshoty, privacy). IPA 1.0.0 (8) hotové; TestFlight ještě 1.0.0 (7), dokud Apple nezpracuje submit.
+- [ ] App Store listing + Submit for Review (screenshoty, privacy). IPA 1.0.0 (9) ve stavbě; TestFlight ještě 1.0.0 (7), dokud Apple 8/9 nezpracuje.
 - [x] **Nový iOS/Android EAS build** — 2026-09-20. iOS 1.0.0 (5) v TestFlight (internal beta). Android APK + AAB hotové. Play submit blokuje chybějící Google Service Account.
 - [ ] **Android na Play** — AAB 1.0.0 (5) je v knihovně Console. Druhý upload stejného souboru padá („kód verze 5 už byl použit“) — přidat z knihovny, ne nahrávat znovu. Listing pořád chybí.
 
@@ -212,7 +214,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Mobil: aktivní kolo na home** — 2026-09-25. Po návratu ze scorecard: Pokračovat + Nové kolo + Zrušit. Zrušit/nové se ptá Uložit (do historie) nebo Vyskočit (zahodit). `activeRound` se persistuje.
 - [x] **Mobil: hráč 1 z profilu** — 2026-09-25. Nové kolo předvyplní přezdívku (nebo jméno) do hráče 1.
 - [x] **Mobil: povinný profil + přezdívka** — 2026-09-25. Login má e-mail, jméno, přezdívku. Bez uloženého profilu redirect na `/login`, zpět z login nejde. Stále lokální profil, ne serverový účet.
-- [x] **Unikátní přezdívka** — 2026-09-25. `POST /api/v1/scorecard/profile` + tabulka `score_profiles` (unique `nickname_normalized`). Stejný e-mail smí svou přezdívku měnit. Cizí přezdívka nebo jméno z cizího odeslaného kola = 409. Mobil bez on-line uložení nepustí. Migrace `0004`. Na prod ještě nenasazeno.
+- [x] **Unikátní přezdívka** — 2026-09-25. `POST /api/v1/scorecard/profile` + tabulka `score_profiles` (unique `nickname_normalized`). Stejný e-mail smí svou přezdívku měnit. Cizí přezdívka nebo jméno z cizího odeslaného kola = 409. Mobil bez on-line uložení nepustí. Migrace `0004`. Na prod v `e79e54e` (ověřeno: prázdný POST vrací 400 validation).
 - [x] **Nové kolo: lepicí start** — 2026-09-25. Tlačítko Začít kolo je pořád dole, typ/formát/hráči se srolují.
 - [x] **Scorecard: zápis + potvrzení jamky** — 2026-09-25. Skóre je hned nahoře, jamky jako tečky. Par je jen návrh; na pořadí a do kola se zapíše až **Potvrdit jamku**. Zrušit je text pod tlačítkem nad safe area, ne uříznuté.
 - [ ] **Liquid glass na chromu scorecard** — pin `LiveStandings` + akcí přes `expo-blur`, ať mřížka jamek jede pod lištou. Audit: `rhino/ui-liquid-glass.md`.
