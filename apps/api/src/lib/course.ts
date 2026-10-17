@@ -8,6 +8,8 @@ export interface CourseHole {
   hole: number;
   par: number;
   closed: boolean;
+  imageUrl: string | null;
+  tip: string | null;
 }
 
 export type CourseGames = Record<GameType, CourseHole[]>;
@@ -17,7 +19,25 @@ export function defaultHolesFor(gameType: GameType): CourseHole[] {
     hole: i + 1,
     par: HOLE_PARS[gameType][i] ?? 2,
     closed: false,
+    imageUrl: null,
+    tip: null,
   }));
+}
+
+function toCourseHole(row: {
+  hole: number;
+  par: number;
+  closed: boolean;
+  imageUrl: string | null;
+  tip: string | null;
+}): CourseHole {
+  return {
+    hole: row.hole,
+    par: row.par,
+    closed: row.closed,
+    imageUrl: row.imageUrl,
+    tip: row.tip,
+  };
 }
 
 export function defaultCourseGames(): CourseGames {
@@ -76,7 +96,7 @@ export async function getCourseGames(): Promise<CourseGames> {
   const games = emptyGames();
   for (const row of rows) {
     if (!isGameType(row.gameType)) continue;
-    games[row.gameType].push({ hole: row.hole, par: row.par, closed: row.closed });
+    games[row.gameType].push(toCourseHole(row));
   }
   for (const gameType of gameTypes) {
     if (games[gameType].length === 0) {
@@ -93,6 +113,8 @@ export async function patchCourseHole(input: {
   hole: number;
   closed?: boolean;
   par?: number;
+  imageUrl?: string | null;
+  tip?: string | null;
 }): Promise<CourseHole> {
   await ensureCourseRows();
   const where = and(eq(scoreCourseHoles.gameType, input.gameType), eq(scoreCourseHoles.hole, input.hole));
@@ -101,13 +123,15 @@ export async function patchCourseHole(input: {
     .set({
       ...(input.closed !== undefined ? { closed: input.closed } : {}),
       ...(input.par !== undefined ? { par: input.par } : {}),
+      ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {}),
+      ...(input.tip !== undefined ? { tip: input.tip } : {}),
       updatedAt: new Date(),
     })
     .where(where)
     .returning();
 
   if (updated) {
-    return { hole: updated.hole, par: updated.par, closed: updated.closed };
+    return toCourseHole(updated);
   }
 
   const [inserted] = await db
@@ -117,7 +141,9 @@ export async function patchCourseHole(input: {
       hole: input.hole,
       par: input.par ?? 2,
       closed: input.closed ?? false,
+      imageUrl: input.imageUrl ?? null,
+      tip: input.tip ?? null,
     })
     .returning();
-  return { hole: inserted.hole, par: inserted.par, closed: inserted.closed };
+  return toCourseHole(inserted);
 }

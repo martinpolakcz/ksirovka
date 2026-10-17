@@ -43,6 +43,13 @@
       "when": 1792268657899,
       "tag": "0005_score_course_holes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792271825835,
+      "tag": "0006_course_hole_maps",
+      "breakpoints": true
     }
   ]
 }

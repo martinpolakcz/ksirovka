@@ -161,6 +161,8 @@ export const scoreCourseHoles = pgTable(
     hole: integer("hole").notNull(),
     par: integer("par").notNull().default(2),
     closed: boolean("closed").notNull().default(false),
+    imageUrl: text("image_url"),
+    tip: text("tip"),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [uniqueIndex("score_course_holes_game_hole_idx").on(table.gameType, table.hole)],

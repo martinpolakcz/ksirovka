@@ -90,8 +90,13 @@ export async function adminRoutes(app: FastifyInstance) {
           details: parsed.error.flatten(),
         });
       }
-      if (parsed.data.closed === undefined && parsed.data.par === undefined) {
-        return reply.status(400).send({ error: "Chybí closed nebo par" });
+      if (
+        parsed.data.closed === undefined &&
+        parsed.data.par === undefined &&
+        parsed.data.imageUrl === undefined &&
+        parsed.data.tip === undefined
+      ) {
+        return reply.status(400).send({ error: "Chybí údaj k uložení" });
       }
       const hole = await patchCourseHole(parsed.data);
       const games = await getCourseGames();

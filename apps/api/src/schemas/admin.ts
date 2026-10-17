@@ -33,11 +33,27 @@ export const hideRoundSchema = z.object({
   hidden: z.boolean(),
 });
 
+const emptyToNull = z
+  .string()
+  .trim()
+  .max(1000)
+  .nullable()
+  .optional()
+  .transform((value) => (value ? value : null));
+
 export const courseHolePatchSchema = z.object({
   gameType: z.enum(["fotbalgolf", "minigolf", "adventure"]),
   hole: z.number().int().min(1).max(20),
   closed: z.boolean().optional(),
   par: z.number().int().min(1).max(8).optional(),
+  imageUrl: emptyToNull,
+  tip: z
+    .string()
+    .trim()
+    .max(160)
+    .nullable()
+    .optional()
+    .transform((value) => (value ? value : null)),
 });
 
 export const adminRoundsQuerySchema = z.object({

@@ -2,7 +2,7 @@
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
 > **Stav:** Produkční API+web na VPS běží (`c16b46e`)  
-> **Poslední aktualizace:** 2026-10-17 22:49
+> **Poslední aktualizace:** 2026-10-17 23:16
 
 ---
 
@@ -227,6 +227,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Unikátní přezdívka** — 2026-09-25. `POST /api/v1/scorecard/profile` + tabulka `score_profiles` (unique `nickname_normalized`). Stejný e-mail smí svou přezdívku měnit. Cizí přezdívka nebo jméno z cizího odeslaného kola = 409. Mobil bez on-line uložení nepustí. Migrace `0004`. Na prod v `e79e54e` (ověřeno: prázdný POST vrací 400 validation).
 - [x] **Nové kolo: lepicí start** — 2026-09-25. Tlačítko Začít kolo je pořád dole, typ/formát/hráči se srolují.
 - [x] **Scorecard: zápis + potvrzení jamky** — 2026-09-25. Skóre je hned nahoře, jamky jako tečky. Par je jen návrh; na pořadí a do kola se zapíše až **Potvrdit jamku**. Zrušit je text pod tlačítkem nad safe area, ne uříznuté.
+- [ ] **Plánky jamek ve hře** — 2026-10-17 v práci. Schváleno: plánek na aktuální jamce + fullscreen, `/admin/jamky` URL+tip, obrázky z URL. Detail: `rhino/hole-maps.md`.
 - [ ] **Liquid glass na chromu scorecard** — pin `LiveStandings` + akcí přes `expo-blur`, ať mřížka jamek jede pod lištou. Audit: `rhino/ui-liquid-glass.md`.
 - [ ] Import obsahu do produkční DB (`import:content`) až poběží API.
 - [ ] Staging na VPS (`./scripts/deploy.sh --staging`) s vlastními daty.
@@ -250,6 +251,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] Google Play Developer účet — zaplaceno 2026-09-20 (uživatel). App + service account ještě chybí.
 - [ ] **Liquid glass vs. overlay:** dnešní lišty obsah neoverlayují, jen mu berou výšku. Sklo má smysl až po pinu chromu (scorecard spodní lišta první). Karty na plochém gradientu zatím ne.
 - [x] **Nové kolo: start je pod foldem** — 2026-09-25. Varianta A: lepicí **Začít kolo** dole, nastavení se sroluje nad ním.
+- [x] **Plánky jamek (UX)** — 2026-10-17. Schváleno: plánek na aktuální jamce, ne mezikrok po uložení.
 
 ---
 

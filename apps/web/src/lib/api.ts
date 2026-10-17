@@ -70,6 +70,8 @@ export interface CourseHole {
   hole: number;
   par: number;
   closed: boolean;
+  imageUrl: string | null;
+  tip: string | null;
 }
 
 export type CourseGames = Record<ScoreGameType, CourseHole[]>;
@@ -295,7 +297,14 @@ export const api = {
   deleteAdminPromo: (id: number) =>
     fetchAdmin<void>(`/admin/promos/${id}`, { method: "DELETE" }),
   getAdminCourse: () => fetchAdmin<{ games: CourseGames }>("/admin/course"),
-  patchAdminCourse: (payload: { gameType: ScoreGameType; hole: number; closed?: boolean; par?: number }) =>
+  patchAdminCourse: (payload: {
+    gameType: ScoreGameType;
+    hole: number;
+    closed?: boolean;
+    par?: number;
+    imageUrl?: string | null;
+    tip?: string | null;
+  }) =>
     fetchAdmin<{ hole: CourseHole; games: CourseGames }>("/admin/course", {
       method: "PATCH",
       body: JSON.stringify(payload),
