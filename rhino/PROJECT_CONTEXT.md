@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`9b01dcf`); 20 jamek / course API čeká na deploy  
-> **Poslední aktualizace:** 2026-10-17 22:25
+> **Stav:** Produkční API+web na VPS běží (`c16b46e`)  
+> **Poslední aktualizace:** 2026-10-17 22:49
 
 ---
 
@@ -66,8 +66,8 @@ Expo účet: `martinpolak` (`martin.polak.cz@gmail.com`). EAS projekt: `@martinp
   - `ksirovka.martinpolak.cz` **A = 62.83.17.63**. `/health` přes IPv4 = `e79e54e`.
   - **AAAA = `2a0a:4cc0:61:4215:c477:34ff:feb2:9147`**. Z VPS `/health` přes `-6` = `e79e54e`. Z notebooku IPv6 timeout (lokální síť, ne VPS).
 - **SSH:** `$HOME/.ssh/netcup_ksirovka_ed25519` → `root@62.83.17.63` (Debian 13). Docker nainstalován `server-setup.sh`.
-- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `9b01dcf`, CI success, image `ghcr.io/martinpolakcz/ksirovka:9b01dcf`.
-- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` A i z VPS IPv6 i `APP_COMMIT` = `9b01dcf` (ověřeno 2026-09-25 15:17). Záloha před deployem `ksirovka-20260925-131651.sql.gz` (15 tabulek). `GET /scorecard/profile?email=` žije. Rollback = `e79e54e`.
+- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `c16b46e`, CI success, image `ghcr.io/martinpolakcz/ksirovka:c16b46e`.
+- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` = `c16b46e` (ověřeno 2026-10-17 22:49). `GET /api/v1/scorecard/course` vrací 3×20 jamek par 2. Záloha před deployem `ksirovka-20261017-202611.sql.gz` (15 tabulek). Migrace `0005_score_course_holes`. Rollback = `9b01dcf`.
 - **Lokálně (2026-09-25):** Colima znovu nastartovaná. Postgres volume byl plný (panic `No space left`); po `docker image prune -af` (~4.8 GB) je healthy, migrace `0004` aplikovaná, API na `:3801`. Expo Go Metro LAN `exp://192.168.1.37:8081`.
 
 Jediné místo s IP a doménami: `deploy/target.env`.
@@ -143,10 +143,10 @@ curl -fsS https://ksirovka.martinpolak.cz/health
 Postgres **nerecreatuj** kvůli env — `POSTGRES_PASSWORD` platí jen při prvním startu volume. Do API se dostane jen to, co je ve `deploy/docker-compose.yml` u `environment:` (`PG_PASSWORD`, `ADMIN_*`, `CORS_ORIGIN`, `LEGACY_SITE_URL`).
 
 #### iOS Scorecard (EAS → App Store Connect)
-Aktuální IPA: **1.0.0 (11)** `c3ff5455` je v App Store Connect (submit `4c2dd6ba` finished 2026-09-29 12:05). Externí skupina TestFlight „Ksírovka“ má veřejný odkaz `https://testflight.apple.com/join/BAZVu4FH`, ale Apple ho nepustí, dokud build neprojde Beta App Review. Testerům proto svítí No Builds Available. Interní skupina Team (Expo) recenzi nepotřebuje. Předchozí hotový build **1.0.0 (10)** `14fe5e16`. Rollback iOS = build 10.
+Aktuální IPA: **1.0.0 (15)** `44f59963` nahraná do App Store Connect (submit `6be3c112`, 2026-10-17 22:49). EAS image pinned `sdk-54` — `latest` spadl na Xcode 27 (deployment target < 15 u RNSVG/AsyncStorage). Build 13/14 ERRORED. Interní TestFlight recenzi nepotřebuje. Rollback iOS = **1.0.0 (11)** `c3ff5455`.
 
 #### Android Scorecard (EAS → Google Play)
-Účet schválený 2026-09-23. AAB ve stavbě: **1.0.0 (8)** `d36aec0f` (2026-09-25 15:15). Preview APK `8021244f`. V Console je AAB **1.0.0 (7)** `8ef4aa05`; upozornění bez R8 mappingu není blocker. `eas submit` pořád bez Service Account JSON. Playbook: `rhino/android-play-store.md`.
+Účet schválený 2026-09-23. AAB **1.0.0 (10)** `f2cb5b5c` (2026-10-17) je v EAS, `eas submit` pořád bez Service Account JSON. V Console zůstává AAB **1.0.0 (7)** `8ef4aa05`. Playbook: `rhino/android-play-store.md`.
 
 ```bash
 cd /Users/martin.polak/Projects/ksirovka-app2/ksirovka-app
@@ -205,12 +205,12 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Nasadit `9afc089`** — `/tv` mobil + mazání kol. `/health` A i AAAA = `9afc089`. Cron retence na prod vypnutý.
 - [x] **Nasadit `e79e54e`** — 2026-09-25. Unikátní přezdívky (`score_profiles` + `POST /scorecard/profile`). `/health` IPv4 i z VPS IPv6 = `e79e54e`. Záloha `ksirovka-20260925-104312.sql.gz`. Rollback = `9afc089`.
 - [x] **Nasadit `9b01dcf`** — 2026-09-25. `GET /scorecard/profile?email=` pro doplnění přezdívky. `/health` A i IPv6 z VPS = `9b01dcf`. Záloha `ksirovka-20260925-131651.sql.gz`. Rollback = `e79e54e`.
-- [x] **Scorecard: 20 jamek, uložení, landscape, share karta** — 2026-10-17. Mobil app2: poslední jamka se neuzavře sama (Alert Chceš uložit?), jeden nadpis SCORECARD, landscape tabulka, skip jamky, share obrázek systémovým sheetem (ne Meta API). API: migrace `0005_score_course_holes`, `GET /scorecard/course`, admin `/admin/jamky`. Deploy image + EAS 1.0.0 (12)/(9) v běhu.
+- [x] **Scorecard: 20 jamek, uložení, landscape, share karta** — 2026-10-17. Nasazeno API `c16b46e` (migrace `0005`, `/admin/jamky`, oficiál = otevřené jamky). Mobil app2: poslední jamka Alert Chceš uložit?, SCORECARD, landscape tabulka, skip, share PNG sheet. iOS **1.0.0 (15)** v App Store Connect. Android AAB **1.0.0 (10)** v EAS, Play submit bez service account.
 - [ ] **Otestovat kolo v TestFlight** — sync na `/vysledky` i Žebříčky.
 - [x] **TV reklamy z ksirovka.cz** — 2026-09-20. 15 záznamů v `tv_promos` lokálně i na prod (8 původních + 7 z hero/dlaždic). Image pořád `9afc089`, jen data. `npm run db:seed-tv` doplní chybějící.
 - [ ] Import obsahu do produkční DB (`import:content`) — homepage z API je zatím prázdná.
 - [x] **Mobil: název na ikoně Kšírovka** — 2026-09-20. `expo.name` + `CFBundleDisplayName` + Android `label` = Kšírovka. iOS 1.0.0 (7) v TestFlight (`9ccdda44` / submit `409d2554`). Android AAB `414162cf` + APK `926c8d8c`. Play submit pořád bez service account.
-- [ ] App Store listing + Submit for Review (screenshoty, privacy). IPA 1.0.0 (11) ve stavbě.
+- [ ] App Store listing + Submit for Review (screenshoty, privacy). IPA 1.0.0 (15) v App Store Connect.
 - [x] **Nový iOS/Android EAS build** — 2026-09-20. iOS 1.0.0 (5) v TestFlight (internal beta). Android APK + AAB hotové. Play submit blokuje chybějící Google Service Account.
 - [ ] **Android na Play** — AAB **1.0.0 (7)** je v knihovně Console (2026-09-25). Upozornění bez mapping souboru ignorovat. Listing / Data safety / privacy URL pořád chybí.
 
