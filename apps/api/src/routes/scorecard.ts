@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { scoreHoleScores, scorePlayers, scoreProfiles, scoreRounds } from "../db/schema.js";
+import { getCourseGames, isOfficialRound, openHoleNumbers } from "../lib/course.js";
 import { config } from "../config.js";
 import {
   HOLE_PARS,
@@ -33,6 +34,11 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 export async function scorecardRoutes(app: FastifyInstance) {
+  app.get("/scorecard/course", async () => {
+    const games = await getCourseGames();
+    return { games };
+  });
+
   app.post(
     "/scorecard/rounds",
     {
@@ -70,7 +76,11 @@ export async function scorecardRoutes(app: FastifyInstance) {
               startedAt: new Date(round.startedAt),
               completedAt: new Date(round.completedAt),
               finishedEarly: round.finishedEarly ?? false,
-              holesPlayed: round.holesPlayed ?? (round.finishedEarly ? 1 : 18),
+              holesPlayed:
+                round.holesPlayed ??
+                round.holes.filter((hole) =>
+                  Object.values(hole.scores).some((score) => typeof score === "number" && score > 0),
+                ).length,
               submittedByEmail: round.submittedBy?.email ?? null,
               submittedByName: round.submittedBy?.name ?? null,
             })
@@ -274,29 +284,49 @@ export async function scorecardRoutes(app: FastifyInstance) {
       .where(filters)
       .orderBy(desc(scoreRounds.completedAt));
 
-    const officialRounds = rounds.filter((r) => !r.finishedEarly && r.holesPlayed >= 18);
-    const officialIds = officialRounds.map((r) => r.id);
+    const course = await getCourseGames();
+    const openByGame = new Map<GameType, number[]>(
+      (Object.keys(course) as GameType[]).map((game) => [game, openHoleNumbers(course[game])]),
+    );
+
     const allIds = rounds.map((r) => r.id);
+    const candidateIds = rounds.filter((r) => !r.finishedEarly).map((r) => r.id);
 
     const players =
       allIds.length > 0
         ? await db.select().from(scorePlayers).where(inArray(scorePlayers.roundId, allIds))
         : [];
 
-    const holeScores =
-      officialIds.length > 0
-        ? await db
-            .select()
-            .from(scoreHoleScores)
-            .where(inArray(scoreHoleScores.roundId, officialIds))
+    const candidateHoleScores =
+      candidateIds.length > 0
+        ? await db.select().from(scoreHoleScores).where(inArray(scoreHoleScores.roundId, candidateIds))
         : [];
 
-    const playersByRound = new Map<number, typeof players>();
-    for (const player of players) {
-      const list = playersByRound.get(player.roundId) ?? [];
-      list.push(player);
-      playersByRound.set(player.roundId, list);
+    const holesByRound = new Map<number, typeof candidateHoleScores>();
+    for (const row of candidateHoleScores) {
+      const list = holesByRound.get(row.roundId) ?? [];
+      list.push(row);
+      holesByRound.set(row.roundId, list);
     }
+
+    const playersByRoundId = new Map<number, typeof players>();
+    for (const player of players) {
+      const list = playersByRoundId.get(player.roundId) ?? [];
+      list.push(player);
+      playersByRoundId.set(player.roundId, list);
+    }
+
+    const officialRounds = rounds.filter((round) =>
+      isOfficialRound({
+        finishedEarly: round.finishedEarly,
+        openHoles: openByGame.get(round.gameType as GameType) ?? [],
+        playerIds: (playersByRoundId.get(round.id) ?? []).map((player) => player.id),
+        scored: holesByRound.get(round.id) ?? [],
+      }),
+    );
+    const officialIds = officialRounds.map((r) => r.id);
+    const holeScores = candidateHoleScores.filter((row) => officialIds.includes(row.roundId));
+    const playersByRound = playersByRoundId;
 
     const officialPlayers = players.filter((p) => officialIds.includes(p.roundId));
     const playerMap = new Map<
@@ -383,7 +413,10 @@ export async function scorecardRoutes(app: FastifyInstance) {
 
     const holeLeaderboard = [...holeMap.values()]
       .map((entry) => {
-        const par = HOLE_PARS[entry.gameType][entry.hole - 1] ?? 3;
+        const par =
+          course[entry.gameType].find((hole) => hole.hole === entry.hole)?.par ??
+          HOLE_PARS[entry.gameType][entry.hole - 1] ??
+          2;
         const avgScore =
           Math.round((entry.scores.reduce((sum, n) => sum + n, 0) / entry.scores.length) * 10) / 10;
         return {

@@ -141,7 +141,7 @@ const translation = {
     players: "Hráčů",
     bestScore: "Nejlepší skóre",
     playerLeaderboard: "Nejlepší hráči",
-    playerLeaderboardHint: "Nejnižší výsledek na celých 18 jamek",
+    playerLeaderboardHint: "Nejnižší výsledek na všech otevřených jamkách",
     holeLeaderboard: "Žebříček jamek",
     holeLeaderboardHint: "Průměr a rekord na každé jamce",
     hardestHoles: "Nejtěžší jamky",

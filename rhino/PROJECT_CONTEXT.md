@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`9b01dcf`)  
-> **Poslední aktualizace:** 2026-09-25 15:20
+> **Stav:** Produkční API+web na VPS běží (`9b01dcf`); 20 jamek / course API čeká na deploy  
+> **Poslední aktualizace:** 2026-10-17 22:25
 
 ---
 
@@ -16,10 +16,11 @@ Tento soubor je **jediný zdroj pravdy** pro dlouhodobého AI agenta. Každá zm
 - **Klíčové vlastnosti:**
   - Redesign webu `ksirovka.cz` 1:1 obsahově ze starého CMS, UI vícejazyčné.
   - API-first backend (obsah, kontakt, TV, admin, scorecard).
-  - Mobilní **Kšírovka Scorecard** — 18 jamek, 1–10 hráčů, formáty jednotlivci / dvojice / foursome / fourball.
-  - Sync dokončených kol: `POST /api/v1/scorecard/rounds` (idempotentní na `client_round_id`).
+  - Mobilní **Kšírovka Scorecard** — **20 jamek, par 2** (všechny tři hry), 1–10 hráčů, formáty jednotlivci / dvojice / foursome / fourball. Pracovní kopie `ksirovka-app2`.
+  - Sync dokončených kol: `POST /api/v1/scorecard/rounds` (idempotentní na `client_round_id`). Jamky 1–20, skóre 1–20 nebo `null` (přeskočení).
+  - Layout hřiště: `GET /api/v1/scorecard/course` + tabulka `score_course_holes`. Admin `/admin/jamky` umí jamku vypnout (rekonstrukce).
   - Klubové žebříčky: `GET /api/v1/scorecard/stats?period=day|week|month|year` — na webu `/vysledky`, v appce obrazovka Žebříčky.
-  - Oficiální žebříčky berou jen plných 18 jamek; období v TZ Europe/Prague.
+  - Oficiální žebříčky berou kola se skóre **na všech právě otevřených jamkách** a `finishedEarly === false`. Přeskočení otevřené jamky ve hře = neoficiální. Stará 18jamková kola zůstanou v historii. Období v TZ Europe/Prague.
   - Produkce na VPS: jeden image (web dist + Fastify), Caddy, Postgres. Image staví CI, server jen stahuje.
 - **Použitý tech stack:**
   - Frontend: React 19.2, TypeScript, Vite 8, Tailwind CSS 4, shadcn/Radix, TanStack Query 5, Zustand 5, Framer Motion 12, i18next, React Router 7. Workspace `@ksirovka/web` v `apps/web`.
@@ -142,7 +143,7 @@ curl -fsS https://ksirovka.martinpolak.cz/health
 Postgres **nerecreatuj** kvůli env — `POSTGRES_PASSWORD` platí jen při prvním startu volume. Do API se dostane jen to, co je ve `deploy/docker-compose.yml` u `environment:` (`PG_PASSWORD`, `ADMIN_*`, `CORS_ORIGIN`, `LEGACY_SITE_URL`).
 
 #### iOS Scorecard (EAS → App Store Connect)
-Aktuální IPA ve stavbě: **1.0.0 (10)** `14fe5e16` (2026-09-25 15:15), auto-submit `e44ff03f`. Předchozí **1.0.0 (9)** `1962b997` / submit `d0106f59`. Produkční URL `https://ksirovka.martinpolak.cz/api/v1`. Rollback iOS = build 9.
+Aktuální IPA: **1.0.0 (11)** `c3ff5455` je v App Store Connect (submit `4c2dd6ba` finished 2026-09-29 12:05). Externí skupina TestFlight „Ksírovka“ má veřejný odkaz `https://testflight.apple.com/join/BAZVu4FH`, ale Apple ho nepustí, dokud build neprojde Beta App Review. Testerům proto svítí No Builds Available. Interní skupina Team (Expo) recenzi nepotřebuje. Předchozí hotový build **1.0.0 (10)** `14fe5e16`. Rollback iOS = build 10.
 
 #### Android Scorecard (EAS → Google Play)
 Účet schválený 2026-09-23. AAB ve stavbě: **1.0.0 (8)** `d36aec0f` (2026-09-25 15:15). Preview APK `8021244f`. V Console je AAB **1.0.0 (7)** `8ef4aa05`; upozornění bez R8 mappingu není blocker. `eas submit` pořád bez Service Account JSON. Playbook: `rhino/android-play-store.md`.
@@ -204,11 +205,12 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Nasadit `9afc089`** — `/tv` mobil + mazání kol. `/health` A i AAAA = `9afc089`. Cron retence na prod vypnutý.
 - [x] **Nasadit `e79e54e`** — 2026-09-25. Unikátní přezdívky (`score_profiles` + `POST /scorecard/profile`). `/health` IPv4 i z VPS IPv6 = `e79e54e`. Záloha `ksirovka-20260925-104312.sql.gz`. Rollback = `9afc089`.
 - [x] **Nasadit `9b01dcf`** — 2026-09-25. `GET /scorecard/profile?email=` pro doplnění přezdívky. `/health` A i IPv6 z VPS = `9b01dcf`. Záloha `ksirovka-20260925-131651.sql.gz`. Rollback = `e79e54e`.
+- [x] **Scorecard: 20 jamek, uložení, landscape, share karta** — 2026-10-17. Mobil app2: poslední jamka se neuzavře sama (Alert Chceš uložit?), jeden nadpis SCORECARD, landscape tabulka, skip jamky, share obrázek systémovým sheetem (ne Meta API). API: migrace `0005_score_course_holes`, `GET /scorecard/course`, admin `/admin/jamky`. Deploy image + EAS 1.0.0 (12)/(9) v běhu.
 - [ ] **Otestovat kolo v TestFlight** — sync na `/vysledky` i Žebříčky.
 - [x] **TV reklamy z ksirovka.cz** — 2026-09-20. 15 záznamů v `tv_promos` lokálně i na prod (8 původních + 7 z hero/dlaždic). Image pořád `9afc089`, jen data. `npm run db:seed-tv` doplní chybějící.
 - [ ] Import obsahu do produkční DB (`import:content`) — homepage z API je zatím prázdná.
 - [x] **Mobil: název na ikoně Kšírovka** — 2026-09-20. `expo.name` + `CFBundleDisplayName` + Android `label` = Kšírovka. iOS 1.0.0 (7) v TestFlight (`9ccdda44` / submit `409d2554`). Android AAB `414162cf` + APK `926c8d8c`. Play submit pořád bez service account.
-- [ ] App Store listing + Submit for Review (screenshoty, privacy). IPA 1.0.0 (10) ve stavbě.
+- [ ] App Store listing + Submit for Review (screenshoty, privacy). IPA 1.0.0 (11) ve stavbě.
 - [x] **Nový iOS/Android EAS build** — 2026-09-20. iOS 1.0.0 (5) v TestFlight (internal beta). Android APK + AAB hotové. Play submit blokuje chybějící Google Service Account.
 - [ ] **Android na Play** — AAB **1.0.0 (7)** je v knihovně Console (2026-09-25). Upozornění bez mapping souboru ignorovat. Listing / Data safety / privacy URL pořád chybí.
 
@@ -221,7 +223,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Mobil: povinný profil + přezdívka** — 2026-09-25. Login má e-mail, jméno, přezdívku. Bez uloženého profilu redirect na `/login`, zpět z login nejde. Stále lokální profil, ne serverový účet.
 - [x] **Mobil: zůstat přihlášený** — 2026-09-25. Profil je jen v persist store `ksirovka-scorecard`. Zápis do AsyncStorage začne až po hydrataci, ať start nepřepíše profil prázdným stavem. Starý klíč `ksirovka-saved-profile` se při prvním startu jednou přenese a smaže.
 - [x] **Mobil: přezdívka podle e-mailu** — 2026-09-25. Po odhlášení e-mail zůstane. `GET /api/v1/scorecard/profile?email=` dotáhne jméno a přezdívku z `score_profiles`. Nový e-mail pole nevyplní. Na prod v `9b01dcf`.
-- [x] **Mobil: Můj profil jako tlačítko** — 2026-09-25. Na home je stejný secondary styl jako Žebříčky a Historie, ne průhledný ghost text.
+- [x] **Mobil: Můj profil jako tlačítko** — 2026-09-25. Na home je stejný secondary styl jako Žebříčky a Historie, ne průhledný ghost text. 2026-09-29: pod tlačítkem je `spacing.md`, ať karta O Kšírovce neleží na tlačítku (iPhone).
 - [x] **Unikátní přezdívka** — 2026-09-25. `POST /api/v1/scorecard/profile` + tabulka `score_profiles` (unique `nickname_normalized`). Stejný e-mail smí svou přezdívku měnit. Cizí přezdívka nebo jméno z cizího odeslaného kola = 409. Mobil bez on-line uložení nepustí. Migrace `0004`. Na prod v `e79e54e` (ověřeno: prázdný POST vrací 400 validation).
 - [x] **Nové kolo: lepicí start** — 2026-09-25. Tlačítko Začít kolo je pořád dole, typ/formát/hráči se srolují.
 - [x] **Scorecard: zápis + potvrzení jamky** — 2026-09-25. Skóre je hned nahoře, jamky jako tečky. Par je jen návrh; na pořadí a do kola se zapíše až **Potvrdit jamku**. Zrušit je text pod tlačítkem nad safe area, ne uříznuté.
@@ -293,7 +295,8 @@ Mobil (Expo) --POST /api/v1/scorecard/rounds--> Fastify + Postgres (VPS)
 - Idempotence: unikátní `client_round_id`; duplicita vrací `{ success: true, duplicate: true }`.
 - Login v appce je lokální profil (e-mail + jméno + přezdívka v AsyncStorage), ne OIDC. Bez kompletního profilu appka nepustí dál. Přezdívka musí být unikátní (`score_profiles`); na žebříček jde přezdívka.
 - Store build jde na HTTPS `https://ksirovka.martinpolak.cz/api/v1`.
-- TV admin `/admin/kola` maže kola (cascade hráči + jamky). Cron retence běží v procesu API (ne systemd): jednou denně v `runHour` Europe/Prague, maže kola starší než `retentionDays`. Výchozí vypnuto.
+- TV admin `/admin/kola` maže kola (cascade hráči + jamky). `/admin/jamky` vypíná jamky v rekonstrukci (`PATCH /api/v1/admin/course`). Cron retence běží v procesu API (ne systemd): jednou denně v `runHour` Europe/Prague, maže kola starší než `retentionDays`. Výchozí vypnuto.
+- Pars už nežijí jen v TS: default 20× par 2 v `score_course_holes`. Appka si layout stáhne, bez API padá na stejný fallback.
 - TV reklamy: tabulka `tv_promos`, admin `/admin` → reklamy, board `GET /api/v1/tv/board`. Výchozí sada 15 kusů v `apps/api/src/data/tv-promos.ts` (hero + dlaždice ksirovka.cz). Na prod nahráno 2026-09-20 (15 řádků).
 
 ---
@@ -301,6 +304,6 @@ Mobil (Expo) --POST /api/v1/scorecard/rounds--> Fastify + Postgres (VPS)
 ## 11. Mobilní UI (liquid glass)
 - Obal: `Screen` = `LinearGradient` `#111f19 → #21382d`; horní řádek v toku pod safe area (počasí vlevo, jazyk vpravo), ne overlay.
 - `Card` = `rgba(38,68,53,0.85)` v toku, ne overlay.
-- Jediné místo, kde chrom sedí na obsahu: **scorecard** — `LiveStandings` (0.95) + akční tlačítka pod `ScrollView` (v toku, ne `absolute`).
+- Jediné místo, kde chrom sedí na obsahu: **scorecard** — `LiveStandings` (0.95) + akční tlačítka pod `ScrollView` (v toku, ne `absolute`). Na šířku je fullscreen `GameScorecard` (živá data). Sdílení výsledku = PNG karta + systémový share sheet.
 - Detail auditu: `rhino/ui-liquid-glass.md`.
 - **Logo (2026-09-20):** motiv tyrkys + oranžový oblouk + tečka. `Logo.tsx` bere `assets/logo-mark.png`. Store ikony v 1.0.0 (5) / Android versionCode 2.

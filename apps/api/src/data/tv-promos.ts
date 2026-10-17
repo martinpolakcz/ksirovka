@@ -130,7 +130,7 @@ export const defaultTvPromos = [
     slot: "featured",
     category: "venue",
     title: "Fotbalgolf",
-    message: "Kombinace fotbalu a golfu. 18 jamek a spousta překážek pro malé i velké.",
+    message: "Kombinace fotbalu a golfu. 20 jamek a spousta překážek pro malé i velké.",
     href: "/charakteristika-hry",
     imageUrl: "https://ksirovka.cz/uploads/ivah0305-0912a9eec4d2cef6fbdf2d0b48e5d36e.JPG",
     sortOrder: 6,

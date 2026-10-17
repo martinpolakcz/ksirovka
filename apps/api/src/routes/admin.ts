@@ -16,8 +16,10 @@ import {
   purgeRounds,
   saveTvDataSettings,
 } from "../lib/tv-data.js";
+import { getCourseGames, patchCourseHole } from "../lib/course.js";
 import {
   adminRoundsQuerySchema,
+  courseHolePatchSchema,
   hideRoundSchema,
   loginSchema,
   promoPatchSchema,
@@ -74,6 +76,27 @@ export async function adminRoutes(app: FastifyInstance) {
     scoped.addHook("preHandler", requireAdmin);
 
     scoped.get("/admin/me", async () => ({ ok: true }));
+
+    scoped.get("/admin/course", async () => {
+      const games = await getCourseGames();
+      return { games };
+    });
+
+    scoped.patch("/admin/course", async (request, reply) => {
+      const parsed = courseHolePatchSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "Validation failed",
+          details: parsed.error.flatten(),
+        });
+      }
+      if (parsed.data.closed === undefined && parsed.data.par === undefined) {
+        return reply.status(400).send({ error: "Chybí closed nebo par" });
+      }
+      const hole = await patchCourseHole(parsed.data);
+      const games = await getCourseGames();
+      return { hole, games };
+    });
 
     scoped.get("/admin/promos", async () => {
       const items = await db

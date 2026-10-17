@@ -66,6 +66,14 @@ export interface HomepageData {
 export type ScorePeriod = "day" | "week" | "month" | "year";
 export type ScoreGameType = "fotbalgolf" | "minigolf" | "adventure";
 
+export interface CourseHole {
+  hole: number;
+  par: number;
+  closed: boolean;
+}
+
+export type CourseGames = Record<ScoreGameType, CourseHole[]>;
+
 export interface ScorecardStats {
   period: ScorePeriod;
   gameType: ScoreGameType | null;
@@ -286,6 +294,12 @@ export const api = {
     }),
   deleteAdminPromo: (id: number) =>
     fetchAdmin<void>(`/admin/promos/${id}`, { method: "DELETE" }),
+  getAdminCourse: () => fetchAdmin<{ games: CourseGames }>("/admin/course"),
+  patchAdminCourse: (payload: { gameType: ScoreGameType; hole: number; closed?: boolean; par?: number }) =>
+    fetchAdmin<{ hole: CourseHole; games: CourseGames }>("/admin/course", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
   getAdminRounds: (limit = 50) =>
     fetchAdmin<{ items: AdminRound[] }>(`/admin/rounds?limit=${limit}`),
   hideAdminRound: (id: number, hidden: boolean) =>

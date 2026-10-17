@@ -1,9 +1,10 @@
 import type { GameType, StatsPeriod } from "../schemas/scorecard.js";
 
+export const HOLE_COUNT = 20;
 export const HOLE_PARS: Record<GameType, number[]> = {
-  fotbalgolf: [3, 4, 3, 4, 3, 4, 3, 4, 3, 3, 4, 3, 4, 3, 4, 3, 4, 3],
-  minigolf: [3, 3, 2, 3, 3, 2, 3, 3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3],
-  adventure: [3, 3, 3, 4, 3, 3, 4, 3, 3, 3, 4, 3, 3, 3, 4, 3, 3, 3],
+  fotbalgolf: Array.from({ length: HOLE_COUNT }, () => 2),
+  minigolf: Array.from({ length: HOLE_COUNT }, () => 2),
+  adventure: Array.from({ length: HOLE_COUNT }, () => 2),
 };
 
 const TIME_ZONE = "Europe/Prague";

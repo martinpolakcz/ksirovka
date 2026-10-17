@@ -5,8 +5,10 @@ export const gameFormats = ["individual", "pairs", "foursome", "fourball"] as co
 export const statPeriods = ["day", "week", "month", "year"] as const;
 
 const holeScoreSchema = z.object({
-  hole: z.number().int().min(1).max(18),
+  hole: z.number().int().min(1).max(20),
   scores: z.record(z.string().min(1).max(80), z.number().int().min(1).max(20).nullable()),
+  skipped: z.boolean().optional(),
+  closed: z.boolean().optional(),
 });
 
 const playerSchema = z.object({
@@ -20,11 +22,11 @@ const resultSchema = z.object({
   total: z.number().int().min(1).max(360),
   rank: z.number().int().min(1).max(20),
   bestHole: z.object({
-    hole: z.number().int().min(1).max(18),
+    hole: z.number().int().min(1).max(20),
     score: z.number().int().min(1).max(20),
   }),
   worstHole: z.object({
-    hole: z.number().int().min(1).max(18),
+    hole: z.number().int().min(1).max(20),
     score: z.number().int().min(1).max(20),
   }),
 });
@@ -34,12 +36,12 @@ export const submitRoundSchema = z.object({
   gameType: z.enum(gameTypes),
   format: z.enum(gameFormats),
   players: z.array(playerSchema).min(1).max(10),
-  holes: z.array(holeScoreSchema).length(18),
+  holes: z.array(holeScoreSchema).min(1).max(20),
   startedAt: z.string().min(10).refine((value) => !Number.isNaN(Date.parse(value)), "Invalid date"),
   completedAt: z.string().min(10).refine((value) => !Number.isNaN(Date.parse(value)), "Invalid date"),
   results: z.array(resultSchema).min(1).max(10),
   finishedEarly: z.boolean().optional(),
-  holesPlayed: z.number().int().min(1).max(18).optional(),
+  holesPlayed: z.number().int().min(1).max(20).optional(),
   submittedBy: z
     .object({
       email: z.string().email().max(255).optional(),

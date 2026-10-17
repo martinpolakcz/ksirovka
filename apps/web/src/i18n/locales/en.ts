@@ -139,7 +139,7 @@ const translation = {
     players: "Players",
     bestScore: "Best score",
     playerLeaderboard: "Top players",
-    playerLeaderboardHint: "Lowest completed 18-hole score",
+    playerLeaderboardHint: "Lowest score on every currently open hole",
     holeLeaderboard: "Hole leaderboard",
     holeLeaderboardHint: "Average and record on every hole",
     hardestHoles: "Toughest holes",

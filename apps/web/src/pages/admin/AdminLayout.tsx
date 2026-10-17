@@ -7,6 +7,7 @@ import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 const NAV = [
   { to: "/admin", label: "Reklamy", end: true },
   { to: "/admin/kola", label: "Kola", end: false },
+  { to: "/admin/jamky", label: "Jamky", end: false },
 ];
 
 export function AdminLayout() {

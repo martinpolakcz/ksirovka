@@ -7,6 +7,7 @@ import {
   boolean,
   jsonb,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const pages = pgTable(
@@ -152,6 +153,19 @@ export const scoreProfiles = pgTable("score_profiles", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const scoreCourseHoles = pgTable(
+  "score_course_holes",
+  {
+    id: serial("id").primaryKey(),
+    gameType: text("game_type").notNull(),
+    hole: integer("hole").notNull(),
+    par: integer("par").notNull().default(2),
+    closed: boolean("closed").notNull().default(false),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("score_course_holes_game_hole_idx").on(table.gameType, table.hole)],
+);
+
 export const scoreHoleScores = pgTable(
   "score_hole_scores",
   {
@@ -223,5 +237,6 @@ export type ScoreProfile = typeof scoreProfiles.$inferSelect;
 export type ScoreRound = typeof scoreRounds.$inferSelect;
 export type ScorePlayer = typeof scorePlayers.$inferSelect;
 export type ScoreHoleScore = typeof scoreHoleScores.$inferSelect;
+export type ScoreCourseHole = typeof scoreCourseHoles.$inferSelect;
 export type TvPromo = typeof tvPromos.$inferSelect;
 export type TvDataSettings = typeof tvDataSettings.$inferSelect;
