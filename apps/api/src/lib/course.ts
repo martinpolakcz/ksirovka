@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { scoreCourseHoles } from "../db/schema.js";
+import { scoreCourseHoleImages, scoreCourseHoles } from "../db/schema.js";
 import { HOLE_COUNT, HOLE_PARS } from "./scorecard.js";
 import { gameTypes, type GameType } from "../schemas/scorecard.js";
 
@@ -108,6 +108,87 @@ export async function getCourseGames(): Promise<CourseGames> {
   return games;
 }
 
+export function holeImagePublicPath(gameType: GameType, hole: number, version?: Date | number | null): string {
+  const path = `/uploads/holes/${gameType}/${hole}`;
+  if (version == null) return path;
+  const stamp = version instanceof Date ? version.getTime() : version;
+  return `${path}?v=${stamp}`;
+}
+
+export function publicOrigin(request: { protocol: string; hostname: string }): string {
+  return `${request.protocol}://${request.hostname}`;
+}
+
+export function absolutizeCourseImages(games: CourseGames, origin: string): CourseGames {
+  const mapHole = (hole: CourseHole): CourseHole => {
+    if (!hole.imageUrl) return hole;
+    if (/^https?:\/\//i.test(hole.imageUrl)) return hole;
+    const path = hole.imageUrl.startsWith("/") ? hole.imageUrl : `/${hole.imageUrl}`;
+    return { ...hole, imageUrl: `${origin}${path}` };
+  };
+  return {
+    fotbalgolf: games.fotbalgolf.map(mapHole),
+    minigolf: games.minigolf.map(mapHole),
+    adventure: games.adventure.map(mapHole),
+  };
+}
+
+export async function saveCourseHoleImage(input: {
+  gameType: GameType;
+  hole: number;
+  mime: string;
+  data: Buffer;
+}): Promise<CourseHole> {
+  const now = new Date();
+  const imageUrl = holeImagePublicPath(input.gameType, input.hole, now);
+  await db
+    .insert(scoreCourseHoleImages)
+    .values({
+      gameType: input.gameType,
+      hole: input.hole,
+      mime: input.mime,
+      data: input.data,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [scoreCourseHoleImages.gameType, scoreCourseHoleImages.hole],
+      set: {
+        mime: input.mime,
+        data: input.data,
+        updatedAt: now,
+      },
+    });
+  return patchCourseHole({
+    gameType: input.gameType,
+    hole: input.hole,
+    imageUrl,
+  });
+}
+
+export async function getCourseHoleImage(
+  gameType: GameType,
+  hole: number,
+): Promise<{ mime: string; data: Buffer } | null> {
+  const [row] = await db
+    .select({
+      mime: scoreCourseHoleImages.mime,
+      data: scoreCourseHoleImages.data,
+    })
+    .from(scoreCourseHoleImages)
+    .where(and(eq(scoreCourseHoleImages.gameType, gameType), eq(scoreCourseHoleImages.hole, hole)))
+    .limit(1);
+  if (!row) return null;
+  const data = Buffer.isBuffer(row.data) ? row.data : Buffer.from(row.data);
+  return { mime: row.mime, data };
+}
+
+export async function deleteCourseHoleImage(gameType: GameType, hole: number): Promise<CourseHole> {
+  await db
+    .delete(scoreCourseHoleImages)
+    .where(and(eq(scoreCourseHoleImages.gameType, gameType), eq(scoreCourseHoleImages.hole, hole)));
+  return patchCourseHole({ gameType, hole, imageUrl: null });
+}
+
 export async function patchCourseHole(input: {
   gameType: GameType;
   hole: number;
@@ -117,6 +198,11 @@ export async function patchCourseHole(input: {
   tip?: string | null;
 }): Promise<CourseHole> {
   await ensureCourseRows();
+  if (input.imageUrl === null) {
+    await db
+      .delete(scoreCourseHoleImages)
+      .where(and(eq(scoreCourseHoleImages.gameType, input.gameType), eq(scoreCourseHoleImages.hole, input.hole)));
+  }
   const where = and(eq(scoreCourseHoles.gameType, input.gameType), eq(scoreCourseHoles.hole, input.hole));
   const [updated] = await db
     .update(scoreCourseHoles)

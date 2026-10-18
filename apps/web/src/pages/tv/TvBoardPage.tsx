@@ -16,6 +16,7 @@ import { Ticker } from "./Ticker";
 import {
   CELEBRATION_MS,
   CELEBRATION_RECORD_MS,
+  CELEBRATION_SHARE_MS,
   FEATURED_ROTATE_MS,
   FULLSCREEN_AD_EVERY_MS,
   FULLSCREEN_AD_MS,
@@ -57,6 +58,7 @@ export function TvBoardPage() {
   const [celebration, setCelebration] = useState<CelebrationRound | null>(null);
   const [fullscreenAd, setFullscreenAd] = useState(false);
   const seenRoundIds = useRef(new Set<number>());
+  const seenShareCards = useRef(new Set<number>());
   const boardPrimed = useRef(false);
   const dayBestByGame = useRef<Partial<Record<ScoreGameType, number>>>({});
   const pendingAd = useRef(false);
@@ -159,13 +161,21 @@ export function TvBoardPage() {
       }
       for (const round of dayPulse.recentRounds) {
         seenRoundIds.current.add(round.id);
+        if (round.shareCardUrl) seenShareCards.current.add(round.id);
       }
       boardPrimed.current = true;
       return;
     }
 
-    const latest = dayPulse.recentRounds.find((round) => !round.finishedEarly);
-    if (!latest || seenRoundIds.current.has(latest.id)) {
+    const latest = dayPulse.recentRounds.find(
+      (round) => !round.finishedEarly && !seenRoundIds.current.has(round.id),
+    );
+    const newCard = dayPulse.recentRounds.find(
+      (round) => Boolean(round.shareCardUrl) && !seenShareCards.current.has(round.id),
+    );
+    const featuredRound = latest ?? newCard;
+
+    if (!featuredRound) {
       for (const row of dayPulse.playerLeaderboard) {
         const current = dayBestByGame.current[row.gameType];
         if (current == null || row.bestTotal < current) {
@@ -175,15 +185,16 @@ export function TvBoardPage() {
       return;
     }
 
-    seenRoundIds.current.add(latest.id);
-    const previousBest = dayBestByGame.current[latest.gameType];
-    const second = latest.standings.find((player) => player.rank > 1) ?? latest.standings[1];
+    seenRoundIds.current.add(featuredRound.id);
+    if (featuredRound.shareCardUrl) seenShareCards.current.add(featuredRound.id);
+    const previousBest = dayBestByGame.current[featuredRound.gameType];
+    const second = featuredRound.standings.find((player) => player.rank > 1) ?? featuredRound.standings[1];
     if (wide) setFullscreenAd(false);
     setCelebration({
-      ...latest,
-      isRecord: previousBest != null && latest.winnerTotal < previousBest,
-      isFirstToday: previousBest == null,
-      gap: second ? Math.max(0, second.total - latest.winnerTotal) : null,
+      ...featuredRound,
+      isRecord: latest != null && previousBest != null && featuredRound.winnerTotal < previousBest,
+      isFirstToday: latest != null && previousBest == null,
+      gap: second ? Math.max(0, second.total - featuredRound.winnerTotal) : null,
     });
 
     for (const row of dayPulse.playerLeaderboard) {
@@ -202,7 +213,11 @@ export function TvBoardPage() {
       }
       return;
     }
-    const hold = celebration.isRecord ? CELEBRATION_RECORD_MS : CELEBRATION_MS;
+    const hold = celebration.shareCardUrl
+      ? CELEBRATION_SHARE_MS
+      : celebration.isRecord
+        ? CELEBRATION_RECORD_MS
+        : CELEBRATION_MS;
     const timer = window.setTimeout(() => setCelebration(null), hold);
     return () => window.clearTimeout(timer);
   }, [celebration, featured.length, wide]);

@@ -52,6 +52,7 @@ export const FEATURED_ROTATE_MS = 12_000;
 export const PANEL_ROTATE_MS = 7_000;
 export const CELEBRATION_MS = 7_000;
 export const CELEBRATION_RECORD_MS = 9_000;
+export const CELEBRATION_SHARE_MS = 11_000;
 export const FULLSCREEN_AD_EVERY_MS = 48_000;
 export const FULLSCREEN_AD_MS = 8_000;
 export const STATS_POLL_MS = 10_000;

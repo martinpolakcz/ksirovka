@@ -4,6 +4,9 @@
 
 {$KSIROVKA_DOMAIN:ksirovka.martinpolak.cz} {
 	encode gzip zstd
+	request_body {
+		max_size 5MB
+	}
 	reverse_proxy ksirovka-api:3801
 
 	header {

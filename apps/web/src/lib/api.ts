@@ -124,6 +124,7 @@ export interface ScorecardStats {
     playerCount: number;
     winnerName: string;
     winnerTotal: number;
+    shareCardUrl?: string | null;
     standings: Array<{ name: string; total: number; rank: number }>;
   }>;
 }
@@ -307,6 +308,11 @@ export const api = {
   }) =>
     fetchAdmin<{ hole: CourseHole; games: CourseGames }>("/admin/course", {
       method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  uploadAdminCourseImage: (payload: { gameType: ScoreGameType; hole: number; image: string }) =>
+    fetchAdmin<{ hole: CourseHole; games: CourseGames }>("/admin/course/image", {
+      method: "POST",
       body: JSON.stringify(payload),
     }),
   getAdminRounds: (limit = 50) =>

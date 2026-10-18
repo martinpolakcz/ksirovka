@@ -8,6 +8,7 @@ import { contentRoutes } from "./routes/content.js";
 import { scorecardRoutes } from "./routes/scorecard.js";
 import { tvRoutes } from "./routes/tv.js";
 import { adminRoutes } from "./routes/admin.js";
+import { uploadRoutes } from "./routes/uploads.js";
 import { startTvDataRetentionJob } from "./lib/tv-data.js";
 
 const app = Fastify({
@@ -46,6 +47,7 @@ await app.register(contentRoutes, { prefix: "/api/v1" });
 await app.register(scorecardRoutes, { prefix: "/api/v1" });
 await app.register(tvRoutes, { prefix: "/api/v1" });
 await app.register(adminRoutes, { prefix: "/api/v1" });
+await app.register(uploadRoutes);
 
 if (config.WEB_DIST) {
   await app.register(fastifyStatic, {
@@ -54,7 +56,7 @@ if (config.WEB_DIST) {
   });
   app.setNotFoundHandler((request, reply) => {
     const url = request.raw.url ?? "";
-    if (url.startsWith("/api") || url.startsWith("/health")) {
+    if (url.startsWith("/api") || url.startsWith("/health") || url.startsWith("/uploads")) {
       return reply.code(404).send({ error: "Not found" });
     }
     return reply.sendFile("index.html");

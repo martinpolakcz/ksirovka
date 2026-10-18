@@ -8,7 +8,21 @@ import {
   jsonb,
   index,
   uniqueIndex,
+  primaryKey,
+  customType,
 } from "drizzle-orm/pg-core";
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return "bytea";
+  },
+  toDriver(value) {
+    return value;
+  },
+  fromDriver(value) {
+    return Buffer.isBuffer(value) ? value : Buffer.from(value as Uint8Array);
+  },
+});
 
 export const pages = pgTable(
   "pages",
@@ -142,6 +156,15 @@ export const scorePlayers = pgTable(
   ],
 );
 
+export const scoreRoundShareCards = pgTable("score_round_share_cards", {
+  roundId: integer("round_id")
+    .primaryKey()
+    .references(() => scoreRounds.id, { onDelete: "cascade" }),
+  mime: text("mime").notNull(),
+  data: bytea("data").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const scoreProfiles = pgTable("score_profiles", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -152,6 +175,18 @@ export const scoreProfiles = pgTable("score_profiles", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const scoreCourseHoleImages = pgTable(
+  "score_course_hole_images",
+  {
+    gameType: text("game_type").notNull(),
+    hole: integer("hole").notNull(),
+    mime: text("mime").notNull(),
+    data: bytea("data").notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.gameType, table.hole] })],
+);
 
 export const scoreCourseHoles = pgTable(
   "score_course_holes",
@@ -239,6 +274,8 @@ export type ScoreProfile = typeof scoreProfiles.$inferSelect;
 export type ScoreRound = typeof scoreRounds.$inferSelect;
 export type ScorePlayer = typeof scorePlayers.$inferSelect;
 export type ScoreHoleScore = typeof scoreHoleScores.$inferSelect;
+export type ScoreRoundShareCard = typeof scoreRoundShareCards.$inferSelect;
 export type ScoreCourseHole = typeof scoreCourseHoles.$inferSelect;
+export type ScoreCourseHoleImage = typeof scoreCourseHoleImages.$inferSelect;
 export type TvPromo = typeof tvPromos.$inferSelect;
 export type TvDataSettings = typeof tvDataSettings.$inferSelect;

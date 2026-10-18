@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`3070e34`)  
-> **Poslední aktualizace:** 2026-10-17 23:31
+> **Stav:** Produkční API+web na VPS běží (`3070e34`); lokálně share karta + upload plánků  
+> **Poslední aktualizace:** 2026-10-18 09:24
 
 ---
 
@@ -206,7 +206,8 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Nasadit `e79e54e`** — 2026-09-25. Unikátní přezdívky (`score_profiles` + `POST /scorecard/profile`). `/health` IPv4 i z VPS IPv6 = `e79e54e`. Záloha `ksirovka-20260925-104312.sql.gz`. Rollback = `9afc089`.
 - [x] **Nasadit `9b01dcf`** — 2026-09-25. `GET /scorecard/profile?email=` pro doplnění přezdívky. `/health` A i IPv6 z VPS = `9b01dcf`. Záloha `ksirovka-20260925-131651.sql.gz`. Rollback = `e79e54e`.
 - [x] **Scorecard: 20 jamek, uložení, landscape, share karta** — 2026-10-17. Nasazeno API `c16b46e` (migrace `0005`, `/admin/jamky`, oficiál = otevřené jamky). Mobil app2: poslední jamka Alert Chceš uložit?, SCORECARD, landscape tabulka, skip, share PNG sheet. iOS **1.0.0 (15)** v App Store Connect. Android AAB **1.0.0 (10)** v EAS, Play submit bez service account.
-- [ ] **Otestovat kolo v TestFlight** — sync na `/vysledky` i Žebříčky.
+- [ ] **Otestovat kolo v TestFlight** — sync na `/vysledky` i Žebříčky. Další IPA až po share/TV změnách (17).
+- [ ] **Nasadit share kartu + plánky PNG** — 2026-10-18. Kód v working tree: migrace `0007`/`0008`, selfie na TV, admin jamky upload PNG na `/uploads/holes/{hra}/{n}` + tlačítko Uložit tip. Čeká commit + CI + `deploy.sh` + EAS 17.
 - [x] **TV reklamy z ksirovka.cz** — 2026-09-20. 15 záznamů v `tv_promos` lokálně i na prod (8 původních + 7 z hero/dlaždic). Image pořád `9afc089`, jen data. `npm run db:seed-tv` doplní chybějící.
 - [ ] Import obsahu do produkční DB (`import:content`) — homepage z API je zatím prázdná.
 - [x] **Mobil: název na ikoně Kšírovka** — 2026-09-20. `expo.name` + `CFBundleDisplayName` + Android `label` = Kšírovka. iOS 1.0.0 (7) v TestFlight (`9ccdda44` / submit `409d2554`). Android AAB `414162cf` + APK `926c8d8c`. Play submit pořád bez service account.
@@ -227,7 +228,10 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Unikátní přezdívka** — 2026-09-25. `POST /api/v1/scorecard/profile` + tabulka `score_profiles` (unique `nickname_normalized`). Stejný e-mail smí svou přezdívku měnit. Cizí přezdívka nebo jméno z cizího odeslaného kola = 409. Mobil bez on-line uložení nepustí. Migrace `0004`. Na prod v `e79e54e` (ověřeno: prázdný POST vrací 400 validation).
 - [x] **Nové kolo: lepicí start** — 2026-09-25. Tlačítko Začít kolo je pořád dole, typ/formát/hráči se srolují.
 - [x] **Scorecard: zápis + potvrzení jamky** — 2026-09-25. Skóre je hned nahoře, jamky jako tečky. Par je jen návrh; na pořadí a do kola se zapíše až **Potvrdit jamku**. Zrušit je text pod tlačítkem nad safe area, ne uříznuté.
-- [x] **Plánky jamek ve hře** — 2026-10-17. API `3070e34` (migrace `0006`, `/admin/jamky` URL+tip). Mobil: náhled + fullscreen u aktuální jamky. iOS **1.0.0 (16)** v ASC, Android AAB **1.0.0 (11)**. Fotky karet ještě chybí — bez URL je jen zápis skóre. Detail: `rhino/hole-maps.md`.
+- [x] **Plánky jamek ve hře** — 2026-10-17. API `3070e34` (migrace `0006`). 2026-10-18: místo URL pole je upload PNG/JPEG na `/uploads/holes/…` + tlačítko Uložit tip (migrace `0008`). Mobil: náhled + fullscreen. iOS **1.0.0 (16)** v ASC do EAS 17. Fotky karet se nahrávají v `/admin/jamky`. Detail: `rhino/hole-maps.md`.
+- [x] **Scorecard: tři akce jako tlačítka** — 2026-10-18. Přeskočit / Ukončit / Zrušit pod Potvrdit jamku jsou orámovaná tlačítka (ikona + krátký popisek), ne zlatý text. Zrušit je červené.
+- [x] **Share karta: copy + název souboru** — 2026-10-18. Věta „Nakopal jsem to sem…“ z karty pryč. Soubor `ksirovka_YYYY-MM-DD_jmeno.jpg` (Praha, bez diakritiky).
+- [x] **Share karta na TV** — 2026-10-18 v kódu. Po uložení kola se otevře selfie. Fotka (i karta bez fotky po Sdílet) jde do `score_round_share_cards` (bytea). `/tv` ukáže stejnou kartu přes celou obrazovku, i když selfie přijde až po prvním „Nové kolo“. Až po nasazení API + novém TestFlight.
 - [ ] **Liquid glass na chromu scorecard** — pin `LiveStandings` + akcí přes `expo-blur`, ať mřížka jamek jede pod lištou. Audit: `rhino/ui-liquid-glass.md`.
 - [ ] Import obsahu do produkční DB (`import:content`) až poběží API.
 - [ ] Staging na VPS (`./scripts/deploy.sh --staging`) s vlastními daty.
@@ -252,6 +256,8 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [ ] **Liquid glass vs. overlay:** dnešní lišty obsah neoverlayují, jen mu berou výšku. Sklo má smysl až po pinu chromu (scorecard spodní lišta první). Karty na plochém gradientu zatím ne.
 - [x] **Nové kolo: start je pod foldem** — 2026-09-25. Varianta A: lepicí **Začít kolo** dole, nastavení se sroluje nad ním.
 - [x] **Plánky jamek (UX)** — 2026-10-17. Schváleno: plánek na aktuální jamce, ne mezikrok po uložení.
+- [x] **Share copy** — 2026-10-18. Divná věta na kartě pryč; zůstává skóre, jméno, „Zahraj si na Kšírovce · Brno“.
+- [ ] **Commit + deploy share/TV + EAS 17** — kód je lokálně v `ksirovka` i `ksirovka-app2`. Bez toho TestFlight 16 selfie na TV nepošle.
 
 ---
 
@@ -291,21 +297,22 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 ## 10. Architektura scorecard (stručně)
 ```
 Mobil (Expo) --POST /api/v1/scorecard/rounds--> Fastify + Postgres (VPS)
-     |                                              |
-     +--GET /api/v1/scorecard/stats                 +-- Web /vysledky
+     |     --POST .../rounds/:clientId/share-card--> score_round_share_cards (JPEG/PNG bytea)
+     +--GET /api/v1/scorecard/stats                 +-- Web /vysledky + /tv (karta přes GET /share-cards/:id)
 ```
 - Idempotence: unikátní `client_round_id`; duplicita vrací `{ success: true, duplicate: true }`.
 - Login v appce je lokální profil (e-mail + jméno + přezdívka v AsyncStorage), ne OIDC. Bez kompletního profilu appka nepustí dál. Přezdívka musí být unikátní (`score_profiles`); na žebříček jde přezdívka.
 - Store build jde na HTTPS `https://ksirovka.martinpolak.cz/api/v1`.
 - TV admin `/admin/kola` maže kola (cascade hráči + jamky). `/admin/jamky` vypíná jamky v rekonstrukci (`PATCH /api/v1/admin/course`). Cron retence běží v procesu API (ne systemd): jednou denně v `runHour` Europe/Prague, maže kola starší než `retentionDays`. Výchozí vypnuto.
-- Pars už nežijí jen v TS: default 20× par 2 v `score_course_holes`. Appka si layout stáhne, bez API padá na stejný fallback. Plánek jamky = `image_url` + `tip` (URL, ne soubor v IPA).
+- Pars už nežijí jen v TS: default 20× par 2 v `score_course_holes`. Appka si layout stáhne, bez API padá na stejný fallback. Plánek jamky = nahraný PNG/JPEG v `score_course_hole_images`, veřejně na `/uploads/holes/{hra}/{n}` (ne URL zvenku, ne soubor v IPA). Admin `/admin/jamky` má nahrání souboru a tlačítko **Uložit tip** — dřív se URL ztrácela, protože se ukládala jen při opuštění pole.
 - TV reklamy: tabulka `tv_promos`, admin `/admin` → reklamy, board `GET /api/v1/tv/board`. Výchozí sada 15 kusů v `apps/api/src/data/tv-promos.ts` (hero + dlaždice ksirovka.cz). Na prod nahráno 2026-09-20 (15 řádků).
+- Share karta kola: tabulka `score_round_share_cards` (1:1 na kolo, cascade s retencí). Mobil po selfie/sdílení POSTuje JPEG (max ~2,5 MB). Stats vrací `shareCardUrl`. `/tv` nejdřív slaví nové kolo textem; až karta dorazí, ukáže ji fullscreen 11 s. Caddy `request_body max_size 5MB`.
 
 ---
 
 ## 11. Mobilní UI (liquid glass)
 - Obal: `Screen` = `LinearGradient` `#111f19 → #21382d`; horní řádek v toku pod safe area (počasí vlevo, jazyk vpravo), ne overlay.
 - `Card` = `rgba(38,68,53,0.85)` v toku, ne overlay.
-- Jediné místo, kde chrom sedí na obsahu: **scorecard** — `LiveStandings` (0.95) + akční tlačítka pod `ScrollView` (v toku, ne `absolute`). Na šířku je fullscreen `GameScorecard` (živá data). Sdílení výsledku = PNG karta + systémový share sheet.
+- Jediné místo, kde chrom sedí na obsahu: **scorecard** — `LiveStandings` (0.95) + akční tlačítka pod `ScrollView` (v toku, ne `absolute`). Pod **Potvrdit jamku** jsou tři orámovaná tlačítka (Přeskočit / Ukončit / Zrušit). Na šířku je fullscreen `GameScorecard` (živá data). Sdílení = JPEG karta `ksirovka_datum_hrac.jpg` + systémový share sheet; po uložení kola se composer otevře sám kvůli selfie.
 - Detail auditu: `rhino/ui-liquid-glass.md`.
 - **Logo (2026-09-20):** motiv tyrkys + oranžový oblouk + tečka. `Logo.tsx` bere `assets/logo-mark.png`. Store ikony v 1.0.0 (5) / Android versionCode 2.

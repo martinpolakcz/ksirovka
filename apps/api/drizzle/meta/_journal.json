@@ -50,6 +50,20 @@
       "when": 1792271825835,
       "tag": "0006_course_hole_maps",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792300700000,
+      "tag": "0007_round_share_cards",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792304700000,
+      "tag": "0008_course_hole_images",
+      "breakpoints": true
     }
   ]
 }

@@ -41,6 +41,12 @@ const emptyToNull = z
   .optional()
   .transform((value) => (value ? value : null));
 
+export const uploadCourseImageSchema = z.object({
+  gameType: z.enum(["fotbalgolf", "minigolf", "adventure"]),
+  hole: z.number().int().min(1).max(20),
+  image: z.string().min(32).max(3_500_000),
+});
+
 export const courseHolePatchSchema = z.object({
   gameType: z.enum(["fotbalgolf", "minigolf", "adventure"]),
   hole: z.number().int().min(1).max(20),

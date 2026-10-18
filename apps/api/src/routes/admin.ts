@@ -16,7 +16,8 @@ import {
   purgeRounds,
   saveTvDataSettings,
 } from "../lib/tv-data.js";
-import { getCourseGames, patchCourseHole } from "../lib/course.js";
+import { getCourseGames, patchCourseHole, saveCourseHoleImage } from "../lib/course.js";
+import { decodeShareCard } from "../lib/share-card.js";
 import {
   adminRoundsQuerySchema,
   courseHolePatchSchema,
@@ -26,6 +27,7 @@ import {
   promoSchema,
   tvDataPurgeSchema,
   tvDataSettingsSchema,
+  uploadCourseImageSchema,
 } from "../schemas/admin.js";
 
 function toDate(value: string | null | undefined): Date | null {
@@ -102,6 +104,39 @@ export async function adminRoutes(app: FastifyInstance) {
       const games = await getCourseGames();
       return { hole, games };
     });
+
+    scoped.post(
+      "/admin/course/image",
+      { bodyLimit: 3_500_000 },
+      async (request, reply) => {
+        const parsed = uploadCourseImageSchema.safeParse(request.body);
+        if (!parsed.success) {
+          return reply.status(400).send({
+            error: "Validation failed",
+            details: parsed.error.flatten(),
+          });
+        }
+        const decoded = decodeShareCard(parsed.data.image);
+        if ("error" in decoded) {
+          const status = decoded.error === "size" ? 413 : 400;
+          const message =
+            decoded.error === "type"
+              ? "Nahraj PNG nebo JPEG"
+              : decoded.error === "size"
+                ? "Soubor je moc velký (max 2,5 MB)"
+                : "Soubor se nepodařilo přečíst";
+          return reply.status(status).send({ error: message });
+        }
+        const hole = await saveCourseHoleImage({
+          gameType: parsed.data.gameType,
+          hole: parsed.data.hole,
+          mime: decoded.mime,
+          data: decoded.data,
+        });
+        const games = await getCourseGames();
+        return { hole, games };
+      },
+    );
 
     scoped.get("/admin/promos", async () => {
       const items = await db

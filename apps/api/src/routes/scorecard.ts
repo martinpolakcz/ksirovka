@@ -1,8 +1,14 @@
 import type { FastifyInstance } from "fastify";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { scoreHoleScores, scorePlayers, scoreProfiles, scoreRounds } from "../db/schema.js";
-import { getCourseGames, isOfficialRound, openHoleNumbers } from "../lib/course.js";
+import { scoreHoleScores, scorePlayers, scoreProfiles, scoreRoundShareCards, scoreRounds } from "../db/schema.js";
+import {
+  absolutizeCourseImages,
+  getCourseGames,
+  isOfficialRound,
+  openHoleNumbers,
+  publicOrigin,
+} from "../lib/course.js";
 import { config } from "../config.js";
 import {
   HOLE_PARS,
@@ -12,10 +18,14 @@ import {
   normalizePlayerName,
   periodTruncUnit,
 } from "../lib/scorecard.js";
+import { decodeShareCard, shareCardPublicUrl } from "../lib/share-card.js";
 import {
+  clientRoundIdParamSchema,
   lookupProfileQuerySchema,
+  roundIdParamSchema,
   statsQuerySchema,
   submitRoundSchema,
+  uploadShareCardSchema,
   upsertProfileSchema,
   type GameType,
 } from "../schemas/scorecard.js";
@@ -34,9 +44,9 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 export async function scorecardRoutes(app: FastifyInstance) {
-  app.get("/scorecard/course", async () => {
+  app.get("/scorecard/course", async (request) => {
     const games = await getCourseGames();
-    return { games };
+    return { games: absolutizeCourseImages(games, publicOrigin(request)) };
   });
 
   app.post(
@@ -140,6 +150,90 @@ export async function scorecardRoutes(app: FastifyInstance) {
       }
     },
   );
+
+  app.post(
+    "/scorecard/rounds/:clientRoundId/share-card",
+    {
+      bodyLimit: 3_500_000,
+      config: {
+        rateLimit: {
+          max: Math.min(config.SCORECARD_RATE_LIMIT_MAX, 12),
+          timeWindow: config.SCORECARD_RATE_LIMIT_WINDOW_MS,
+          keyGenerator: (req) => `share-card:${req.ip}`,
+        },
+      },
+    },
+    async (request, reply) => {
+      const params = clientRoundIdParamSchema.safeParse(request.params);
+      const parsed = uploadShareCardSchema.safeParse(request.body);
+      if (!params.success || !parsed.success) {
+        return reply.status(400).send({ error: "Validation failed" });
+      }
+
+      const decoded = decodeShareCard(parsed.data.image);
+      if ("error" in decoded) {
+        const status = decoded.error === "size" ? 413 : 400;
+        return reply.status(status).send({ error: decoded.error });
+      }
+
+      const [round] = await db
+        .select({ id: scoreRounds.id })
+        .from(scoreRounds)
+        .where(eq(scoreRounds.clientRoundId, params.data.clientRoundId))
+        .limit(1);
+
+      if (!round) {
+        return reply.status(404).send({ error: "not_found" });
+      }
+
+      const now = new Date();
+      await db
+        .insert(scoreRoundShareCards)
+        .values({
+          roundId: round.id,
+          mime: decoded.mime,
+          data: decoded.data,
+          createdAt: now,
+        })
+        .onConflictDoUpdate({
+          target: scoreRoundShareCards.roundId,
+          set: {
+            mime: decoded.mime,
+            data: decoded.data,
+            createdAt: now,
+          },
+        });
+
+      return { success: true, url: shareCardPublicUrl(round.id, now) };
+    },
+  );
+
+  app.get("/scorecard/share-cards/:id", async (request, reply) => {
+    const params = roundIdParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return reply.status(400).send({ error: "Validation failed" });
+    }
+
+    const [card] = await db
+      .select({
+        mime: scoreRoundShareCards.mime,
+        data: scoreRoundShareCards.data,
+      })
+      .from(scoreRoundShareCards)
+      .innerJoin(scoreRounds, eq(scoreRounds.id, scoreRoundShareCards.roundId))
+      .where(and(eq(scoreRoundShareCards.roundId, params.data.id), eq(scoreRounds.hidden, false)))
+      .limit(1);
+
+    if (!card) {
+      return reply.status(404).send({ error: "not_found" });
+    }
+
+    const bytes = Buffer.isBuffer(card.data) ? card.data : Buffer.from(card.data);
+    return reply
+      .header("Cache-Control", "public, max-age=30")
+      .type(card.mime)
+      .send(bytes);
+  });
 
   app.post(
     "/scorecard/profile",
@@ -434,9 +528,22 @@ export async function scorecardRoutes(app: FastifyInstance) {
 
     const hardestHoles = [...holeLeaderboard].sort((a, b) => b.vsPar - a.vsPar).slice(0, 5);
 
+    const shareCards =
+      allIds.length > 0
+        ? await db
+            .select({
+              roundId: scoreRoundShareCards.roundId,
+              createdAt: scoreRoundShareCards.createdAt,
+            })
+            .from(scoreRoundShareCards)
+            .where(inArray(scoreRoundShareCards.roundId, allIds))
+        : [];
+    const shareCardByRound = new Map(shareCards.map((row) => [row.roundId, row.createdAt]));
+
     const recentRounds = rounds.slice(0, 12).map((round) => {
       const roster = (playersByRound.get(round.id) ?? []).sort((a, b) => a.rank - b.rank);
       const winner = roster[0];
+      const shareAt = shareCardByRound.get(round.id);
       return {
         id: round.id,
         gameType: round.gameType,
@@ -447,6 +554,7 @@ export async function scorecardRoutes(app: FastifyInstance) {
         playerCount: roster.length,
         winnerName: winner?.name ?? "",
         winnerTotal: winner?.total ?? 0,
+        shareCardUrl: shareAt ? shareCardPublicUrl(round.id, shareAt) : null,
         standings: roster.slice(0, 6).map((p) => ({
           name: p.name,
           total: p.total,

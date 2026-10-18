@@ -17,8 +17,7 @@ Fotbalgolf má papírový plánek „jak se jamka hraje“. Hráč stojí na mí
 4. Chybějící fotka = dnešní obrazovka, nic se nerozbije.
 
 ## Data
-Rozšířit `score_course_holes`: `image_url`, `tip` (krátký text). Správa: stávající `/admin/jamky`.
-Obrázky **nepéct do IPA** — mění se bez EAS. První vlna: URL (jako TV reklamy). Upload na volume až když URL přestane stačit. Kontejner je na to read-only.
+`score_course_holes.image_url` + `tip`. PNG/JPEG se nahrávají v `/admin/jamky` do tabulky `score_course_hole_images` (bytea, ne volume — kontejner je `USER node`). Veřejně: `/uploads/holes/{hra}/{n}`. Appka dostane absolutní URL z `GET /scorecard/course`. Obrázky **nepéct do IPA**. Tlačítko **Uložit tip** — URL pole se ztrácelo, protože se ukládalo jen při blur.
 
 ## Rozsah v1
 Jen fotbalgolf, 20 plánků. Minigolf/adventure později.

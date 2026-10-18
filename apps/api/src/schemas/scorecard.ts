@@ -65,6 +65,18 @@ export const statsQuerySchema = z.object({
   gameType: z.enum(gameTypes).optional(),
 });
 
+export const uploadShareCardSchema = z.object({
+  image: z.string().min(32).max(3_500_000),
+});
+
+export const clientRoundIdParamSchema = z.object({
+  clientRoundId: z.string().min(1).max(80),
+});
+
+export const roundIdParamSchema = z.object({
+  id: z.coerce.number().int().positive(),
+});
+
 export type SubmitRoundInput = z.infer<typeof submitRoundSchema>;
 export type StatsPeriod = (typeof statPeriods)[number];
 export type GameType = (typeof gameTypes)[number];

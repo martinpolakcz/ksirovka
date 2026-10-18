@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminAuthError, api, type CourseHole, type ScoreGameType } from "@/lib/api";
 import { GAME_LABELS } from "@/pages/tv/tv-shared";
@@ -11,25 +11,47 @@ function redirectIfUnauthorized(error: unknown) {
 
 const GAMES: ScoreGameType[] = ["fotbalgolf", "minigolf", "adventure"];
 
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(reader.error ?? new Error("Soubor se nepodařilo přečíst"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function HoleEditor({
   gameType,
   hole,
-  onSave,
+  onSaveTip,
+  onUpload,
+  onRemoveImage,
+  onToggleClosed,
   busy,
 }: {
   gameType: ScoreGameType;
   hole: CourseHole;
-  onSave: (payload: {
-    gameType: ScoreGameType;
-    hole: number;
-    closed?: boolean;
-    imageUrl?: string | null;
-    tip?: string | null;
-  }) => void;
+  onSaveTip: (tip: string | null) => void;
+  onUpload: (file: File) => void;
+  onRemoveImage: () => void;
+  onToggleClosed: (closed: boolean) => void;
   busy: boolean;
 }) {
-  const [imageUrl, setImageUrl] = useState(hole.imageUrl ?? "");
   const [tip, setTip] = useState(hole.tip ?? "");
+  const [pickedName, setPickedName] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTip(hole.tip ?? "");
+  }, [hole.tip]);
+
+  useEffect(() => {
+    setPickedName(null);
+    setPreview(null);
+  }, [hole.imageUrl, hole.hole, gameType]);
+
+  const shownImage = preview || hole.imageUrl;
+  const tipDirty = (tip.trim() || null) !== (hole.tip ?? null);
 
   return (
     <article className="rounded-2xl border border-ink/10 bg-white p-4">
@@ -43,17 +65,15 @@ function HoleEditor({
             type="checkbox"
             checked={hole.closed}
             disabled={busy}
-            onChange={(event) =>
-              onSave({ gameType, hole: hole.hole, closed: event.target.checked })
-            }
+            onChange={(event) => onToggleClosed(event.target.checked)}
           />
           v rekonstrukci
         </label>
       </div>
 
-      {imageUrl ? (
+      {shownImage ? (
         <img
-          src={imageUrl}
+          src={shownImage}
           alt={`Plánek jamky ${hole.hole}`}
           className="mt-3 h-28 w-full rounded-xl object-cover bg-ink/5"
         />
@@ -64,34 +84,55 @@ function HoleEditor({
       )}
 
       <label className="mt-3 block text-xs text-ink/50">
-        URL plánku
+        Plánek (PNG nebo JPEG)
         <input
-          value={imageUrl}
-          onChange={(event) => setImageUrl(event.target.value)}
-          onBlur={() => {
-            const next = imageUrl.trim() || null;
-            if (next === (hole.imageUrl ?? null)) return;
-            onSave({ gameType, hole: hole.hole, imageUrl: next });
+          type="file"
+          accept="image/png,image/jpeg"
+          disabled={busy}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (!file) return;
+            setPickedName(file.name);
+            setPreview(URL.createObjectURL(file));
+            onUpload(file);
           }}
-          placeholder="https://…"
-          className="mt-1 w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
+          className="mt-1 block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-orange file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
         />
       </label>
+      {pickedName ? <p className="mt-1 text-xs text-ink/45">Nahrávám {pickedName}…</p> : null}
+
       <label className="mt-3 block text-xs text-ink/50">
         Tip, jak se hraje
         <input
           value={tip}
           onChange={(event) => setTip(event.target.value)}
-          onBlur={() => {
-            const next = tip.trim() || null;
-            if (next === (hole.tip ?? null)) return;
-            onSave({ gameType, hole: hole.hole, tip: next });
-          }}
           maxLength={160}
           placeholder="např. přes vodu zleva"
           className="mt-1 w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
         />
       </label>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={busy || !tipDirty}
+          onClick={() => onSaveTip(tip.trim() || null)}
+          className="rounded-full bg-orange px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+        >
+          Uložit tip
+        </button>
+        {hole.imageUrl ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onRemoveImage}
+            className="rounded-full px-4 py-2 text-sm text-ink/60 ring-1 ring-ink/15 hover:text-orange"
+          >
+            Odstranit plánek
+          </button>
+        ) : null}
+      </div>
     </article>
   );
 }
@@ -106,6 +147,11 @@ export function AdminCoursePage() {
     queryFn: () => api.getAdminCourse(),
   });
 
+  async function refresh() {
+    await queryClient.invalidateQueries({ queryKey: ["admin-course"] });
+    await queryClient.invalidateQueries({ queryKey: ["scorecard-stats"] });
+  }
+
   const patchMutation = useMutation({
     mutationFn: (payload: {
       gameType: ScoreGameType;
@@ -117,22 +163,45 @@ export function AdminCoursePage() {
     }) => api.patchAdminCourse(payload),
     onSuccess: async () => {
       setMessage("Jamka je uložená.");
-      await queryClient.invalidateQueries({ queryKey: ["admin-course"] });
-      await queryClient.invalidateQueries({ queryKey: ["scorecard-stats"] });
+      await refresh();
     },
-    onError: redirectIfUnauthorized,
+    onError: (error) => {
+      redirectIfUnauthorized(error);
+      if (!(error instanceof AdminAuthError)) {
+        setMessage(error instanceof Error ? error.message : "Uložení se nepovedlo.");
+      }
+    },
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async (input: { gameType: ScoreGameType; hole: number; file: File }) => {
+      const image = await readFileAsDataUrl(input.file);
+      return api.uploadAdminCourseImage({ gameType: input.gameType, hole: input.hole, image });
+    },
+    onSuccess: async () => {
+      setMessage("Plánek je uložený na webu.");
+      await refresh();
+    },
+    onError: (error) => {
+      redirectIfUnauthorized(error);
+      if (!(error instanceof AdminAuthError)) {
+        setMessage(error instanceof Error ? error.message : "Nahrání se nepovedlo.");
+      }
+    },
   });
 
   const holes: CourseHole[] = courseQuery.data?.games[gameType] ?? [];
   const openCount = holes.filter((hole) => !hole.closed).length;
   const withPlan = holes.filter((hole) => hole.imageUrl).length;
+  const busy = patchMutation.isPending || uploadMutation.isPending;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="font-display text-3xl">Jamky</h1>
       <p className="mt-2 max-w-2xl text-sm text-ink/70">
-        Vypni jamku v rekonstrukci a u fotbalgolfu doplň plánek (URL fotky) a krátký tip. Appka si ho
-        stáhne — do instalace se nepálí. Bez fotky zůstane jen zápis skóre.
+        Vypni jamku v rekonstrukci a nahraj plánek (PNG/JPEG). Soubor zůstane na webu pod{" "}
+        <code className="text-xs">/uploads/holes/…</code> a appka si ho stáhne. Bez fotky zůstane jen
+        zápis skóre. Tip ulož tlačítkem — samo se neukládá.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
@@ -162,8 +231,11 @@ export function AdminCoursePage() {
             key={`${gameType}-${hole.hole}`}
             gameType={gameType}
             hole={hole}
-            busy={patchMutation.isPending}
-            onSave={(payload) => patchMutation.mutate(payload)}
+            busy={busy}
+            onToggleClosed={(closed) => patchMutation.mutate({ gameType, hole: hole.hole, closed })}
+            onSaveTip={(tip) => patchMutation.mutate({ gameType, hole: hole.hole, tip })}
+            onUpload={(file) => uploadMutation.mutate({ gameType, hole: hole.hole, file })}
+            onRemoveImage={() => patchMutation.mutate({ gameType, hole: hole.hole, imageUrl: null })}
           />
         ))}
       </div>
