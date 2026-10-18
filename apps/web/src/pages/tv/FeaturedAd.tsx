@@ -10,7 +10,7 @@ type FeaturedAdProps = {
 
 export function FeaturedAd({ promo, reducedMotion }: FeaturedAdProps) {
   return (
-    <div className="tv-card relative min-h-52 overflow-hidden lg:min-h-0 lg:flex-1">
+    <div className="tv-card relative min-h-52 overflow-hidden lg:h-full lg:min-h-0">
       <AnimatePresence mode="wait">
         {promo ? (
           <motion.article
@@ -29,7 +29,7 @@ export function FeaturedAd({ promo, reducedMotion }: FeaturedAdProps) {
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/25 to-transparent" />
-            <div className="relative flex h-full flex-col justify-end p-5">
+            <div className="relative flex h-full flex-col justify-end p-5 lg:pr-48">
               <p className="text-sm font-semibold text-orange">
                 {CATEGORY_LABELS[promo.category]}
               </p>

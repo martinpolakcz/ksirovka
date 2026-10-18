@@ -360,13 +360,11 @@ export function TvBoardPage() {
             )}
           </div>
 
-          <div className="flex flex-col gap-4 lg:min-h-0">
-            {!emptyBoard && <QrInvite />}
-            <FeaturedAd promo={activeAd} reducedMotion={reducedMotion} />
-          </div>
+          <FeaturedAd promo={activeAd} reducedMotion={reducedMotion} />
         </section>
       </main>
 
+      <QrInvite />
       <Ticker promos={tickerPromos} recent={dayPulse?.recentRounds ?? []} />
     </div>
   );

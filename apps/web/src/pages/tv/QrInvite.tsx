@@ -1,40 +1,35 @@
 import { useMemo } from "react";
 import { renderSVG } from "uqr";
 
-export function QrInvite({ large = false }: { large?: boolean }) {
+export function QrInvite() {
   const url = typeof window === "undefined" ? "https://ksirovka.cz/vysledky" : `${window.location.origin}/vysledky`;
   const svg = useMemo(
     () =>
       renderSVG(url, {
-        pixelSize: large ? 8 : 6,
+        pixelSize: 7,
         border: 2,
         whiteColor: "#ffffff",
         blackColor: "#0eada7",
       }),
-    [url, large],
+    [url],
   );
 
   return (
-    <div
-      className={
-        large
-          ? "tv-card flex flex-col items-center justify-center gap-4 p-5 lg:h-full lg:gap-5 lg:p-6"
-          : "tv-card flex items-center gap-3 p-4 lg:gap-4"
-      }
-    >
-      <div
-        className={
-          large
-            ? "size-32 overflow-hidden rounded-3xl ring-1 ring-teal/30 lg:size-40"
-            : "size-20 shrink-0 overflow-hidden rounded-2xl ring-1 ring-teal/30 lg:size-28"
-        }
-        dangerouslySetInnerHTML={{ __html: svg }}
-      />
-      <div className={large ? "text-center" : undefined}>
-        <p className="text-sm font-semibold text-teal">Zahraj a jsi na TV</p>
-        <p className="mt-1 text-lg font-semibold leading-snug text-ink lg:text-2xl">Nahraj skóre v appce</p>
-        <p className="mt-1 text-sm text-ink/55">Naskenuj a podívej se na žebříček. Další kolo můžeš být ty.</p>
+    <aside className="absolute bottom-[3.35rem] right-3 z-20 lg:bottom-[4.1rem] lg:right-5">
+      <div className="flex items-center gap-3 rounded-[1.35rem] bg-white p-2.5 shadow-[0_16px_40px_rgba(14,173,167,0.22)] ring-1 ring-ink/10 lg:gap-3.5 lg:p-3">
+        <div
+          className="size-[5.25rem] overflow-hidden rounded-2xl ring-1 ring-teal/20 lg:size-[6.5rem]"
+          dangerouslySetInnerHTML={{ __html: svg }}
+        />
+        <div className="pr-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-teal">Naskenuj</p>
+          <p className="mt-0.5 font-display text-lg font-semibold leading-tight text-ink lg:text-xl">
+            Zahraj
+            <br />
+            a jsi na TV
+          </p>
+        </div>
       </div>
-    </div>
+    </aside>
   );
 }

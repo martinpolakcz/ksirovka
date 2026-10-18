@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`df72689`)  
-> **Poslední aktualizace:** 2026-10-18 13:30
+> **Stav:** Produkční API+web na VPS běží (`df72689`); plovoucí QR čeká na deploy  
+> **Poslední aktualizace:** 2026-10-18 13:33
 
 ---
 
@@ -311,7 +311,7 @@ Mobil (Expo) --POST /api/v1/scorecard/rounds--> Fastify + Postgres (VPS)
 - Store build jde na HTTPS `https://ksirovka.martinpolak.cz/api/v1`.
 - TV admin `/admin/kola` maže kola (cascade hráči + jamky). `/admin/jamky` vypíná jamky v rekonstrukci (`PATCH /api/v1/admin/course`). Cron retence běží v procesu API (ne systemd): jednou denně v `runHour` Europe/Prague, maže kola starší než `retentionDays`. Výchozí vypnuto.
 - Pars žijí v `score_course_holes` (default 2, admin 1–8). Appka si layout stáhne; bez API padá na 20× par 2. Plánek = PNG/JPEG v `score_course_hole_images`, veřejně `/uploads/holes/{hra}/{n}`. PATCH jamky posílá jen změněná pole — vynechané `undefined` nesmí spadnout na `null` (mazalo by plánek).
-- TV reklamy: tabulka `tv_promos`, admin `/admin` → reklamy, board `GET /api/v1/tv/board`. Výchozí sada 15 kusů v `apps/api/src/data/tv-promos.ts` (hero + dlaždice ksirovka.cz). Na prod nahráno 2026-09-20 (15 řádků).
+- TV reklamy: tabulka `tv_promos`, admin `/admin` → reklamy, board `GET /api/v1/tv/board`. Výchozí sada 15 kusů v `apps/api/src/data/tv-promos.ts` (hero + dlaždice ksirovka.cz). Na prod nahráno 2026-09-20 (15 řádků). Pravý sloupec `/tv` je celý reklama; QR je plovoucí lístek vpravo dole nad tickerem (ne karta nad reklamou).
 - Share karta kola: tabulka `score_round_share_cards` (1:1 na kolo, cascade s retencí). Mobil po selfie/sdílení POSTuje JPEG (max ~2,5 MB). Stats vrací relativní `shareCardUrl`. `/tv`: pódium 2/1/3 v původní velikosti (jméno, hra, kola, skóre + kruhový medailon obličeje). Právě dohráli = 6 medailonků: kruhová fotka se zlatým kroužkem, velké oranžové skóre, jméno, hra; nejstarší vlevo, nový zprava s tealcovým prstencem. Bez fotky iniciála na barvě hry. Overlay oslavy 11 s. GET share-card má `Cross-Origin-Resource-Policy: cross-origin`. Caddy `request_body max_size 5MB`.
 
 ---
