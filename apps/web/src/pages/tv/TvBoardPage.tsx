@@ -297,6 +297,7 @@ export function TvBoardPage() {
               leaderboard={stats?.playerLeaderboard ?? []}
               reducedMotion={reducedMotion}
               compact={!wide}
+              shareCardUrl={latestShare?.shareCardUrl}
             />
           )}
         </section>
@@ -336,16 +337,6 @@ export function TvBoardPage() {
                   </li>
                 ))}
               </ul>
-              {latestShare?.shareCardUrl ? (
-                <img
-                  src={latestShare.shareCardUrl}
-                  alt={`${latestShare.winnerName} · ${latestShare.winnerTotal}`}
-                  className="mt-3 mx-auto max-h-44 w-auto max-w-full rounded-xl object-contain"
-                  onError={(event) => {
-                    event.currentTarget.style.display = "none";
-                  }}
-                />
-              ) : null}
             </div>
             <div className="tv-card min-h-0 flex-1 p-4 lg:p-5">
               {panel === "story" && dayPulse && <StoryStats summary={dayPulse.summary} />}

@@ -2,7 +2,7 @@
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
 > **Stav:** Produkční API+web na VPS běží (`00654e3`)  
-> **Poslední aktualizace:** 2026-10-18 11:43
+> **Poslední aktualizace:** 2026-10-18 12:18
 
 ---
 
@@ -232,7 +232,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Plánky jamek ve hře** — 2026-10-17. API `3070e34` (migrace `0006`). 2026-10-18: upload PNG/JPEG na `/uploads/holes/…`. Tip je v appce na náhledu i ve fullscreen. Par u jamky se mění v adminu. Detail: `rhino/hole-maps.md`.
 - [x] **Scorecard: tři akce jako tlačítka** — 2026-10-18. Přeskočit / Ukončit / Zrušit pod Potvrdit jamku jsou orámovaná tlačítka (ikona + krátký popisek), ne zlatý text. Zrušit je červené.
 - [x] **Share karta: copy + název souboru** — 2026-10-18. Věta „Nakopal jsem to sem…“ z karty pryč. Soubor `ksirovka_YYYY-MM-DD_jmeno.jpg` (Praha, bez diakritiky).
-- [x] **Share karta na TV** — 2026-10-18. Overlay 11 s + karta zůstane v panelu Právě dohráli. Stats vrací absolutní `shareCardUrl` (Host včetně portu).
+- [x] **Share karta na TV** — 2026-10-18. Overlay 11 s. Selfie patří na 1. místo pódia (velká karta nahoře), ne do Právě dohráli. Stats vrací absolutní `shareCardUrl`.
 - [ ] **Liquid glass na chromu scorecard** — pin `LiveStandings` + akcí přes `expo-blur`, ať mřížka jamek jede pod lištou. Audit: `rhino/ui-liquid-glass.md`.
 - [ ] Import obsahu do produkční DB (`import:content`) až poběží API.
 - [ ] Staging na VPS (`./scripts/deploy.sh --staging`) s vlastními daty.
@@ -280,7 +280,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 | BUG-07 | iframe `/tv` na martinpolak.cz freelancer | 2026-09-20 | Caddy: `/tv` bez X-Frame-Options, `frame-ancestors` jen martinpolak.cz. Image pořád `9afc089`. |
 | BUG-08 | Jazyk v appce pod ikonami status baru | 2026-09-24 | Header row v layoutu pod SafeArea; `LanguagePicker` už není absolute. |
 | BUG-09 | Uložení tipu v `/admin/jamky` smazalo plánek | 2026-10-18 | Zod `undefined → null`; `optionalText` vynechané pole nechá. Ověřeno lokálně: upload + Uložit tip, `Odstranit plánek` zůstalo. |
-| BUG-10 | TV Právě dohráli: rozhozené sloupce, chybí selfie | 2026-10-18 | CSS grid 3 sloupce + poslední `shareCardUrl` v panelu; absolutní URL z Host. |
+| BUG-10 | TV Právě dohráli: rozhozené sloupce, chybí selfie | 2026-10-18 | CSS grid 3 sloupce. Selfie 2026-10-18 přesunuta z panelu na 1. místo pódia (velká karta). |
 | BUG-11 | Tip jak zahrát chyběl u plánku v appce (náhled i fullscreen) | 2026-10-18 | `HolePlan` overlay + fullscreen box; refetch course při focus scorecard. Částečně i BUG-09 (tip byl smazaný). |
 
 ---
