@@ -47,8 +47,8 @@ export function Podium({ leaderboard, recentRounds, reducedMotion, compact = fal
                   className={cn(
                     "shrink-0",
                     first
-                      ? "size-24 rounded-[1.4rem] ring-2 ring-white/35 lg:size-36 xl:size-44"
-                      : "size-16 rounded-2xl ring-1 ring-ink/10 lg:size-24 xl:size-28",
+                      ? "size-24 rounded-full ring-[3px] ring-white/80 lg:size-36 xl:size-44"
+                      : "size-16 rounded-full ring-[3px] ring-[#d4a853] lg:size-24 xl:size-28",
                   )}
                 />
               ) : null}
