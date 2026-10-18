@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { absolutizeCourseImages, holeImagePublicPath, isOfficialRound } from "./course.js";
+import { absolutizeCourseImages, holeImagePublicPath, isOfficialRound, publicOrigin } from "./course.js";
 
 test("oficiální kolo má skóre na všech otevřených jamkách", () => {
   assert.equal(
@@ -71,4 +71,15 @@ test("relativní plánek se pro appku rozšíří na absolutní URL", () => {
   );
   assert.equal(games.fotbalgolf[0]?.imageUrl, "https://ksirovka.martinpolak.cz/uploads/holes/fotbalgolf/1");
   assert.equal(games.adventure[0]?.imageUrl, "https://ksirovka.cz/a.png");
+});
+
+test("publicOrigin bere Host včetně portu", () => {
+  assert.equal(
+    publicOrigin({ protocol: "http", hostname: "127.0.0.1", headers: { host: "127.0.0.1:3801" } }),
+    "http://127.0.0.1:3801",
+  );
+  assert.equal(
+    publicOrigin({ protocol: "https", hostname: "ksirovka.martinpolak.cz", headers: { host: "ksirovka.martinpolak.cz" } }),
+    "https://ksirovka.martinpolak.cz",
+  );
 });

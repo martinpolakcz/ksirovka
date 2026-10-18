@@ -17,7 +17,7 @@ Fotbalgolf má papírový plánek „jak se jamka hraje“. Hráč stojí na mí
 4. Chybějící fotka = dnešní obrazovka, nic se nerozbije.
 
 ## Data
-`score_course_holes.image_url` + `tip`. PNG/JPEG se nahrávají v `/admin/jamky` do tabulky `score_course_hole_images` (bytea, ne volume — kontejner je `USER node`). Veřejně: `/uploads/holes/{hra}/{n}`. Appka dostane absolutní URL z `GET /scorecard/course`. Obrázky **nepéct do IPA**. Tlačítko **Uložit tip** — URL pole se ztrácelo, protože se ukládalo jen při blur.
+`score_course_holes.image_url` + `tip` + `par` (default 2, 1–8). PNG/JPEG se nahrávají v `/admin/jamky` do tabulky `score_course_hole_images` (bytea, ne volume — kontejner je `USER node`). Veřejně: `/uploads/holes/{hra}/{n}`. Appka dostane absolutní URL z `GET /scorecard/course`. Obrázky **nepéct do IPA**. Tlačítko **Uložit** posílá jen par a tip — plánek se nikdy nesaže. Starý Zod transform `undefined → null` při uložení tipu mazal `image_url` i soubor v `score_course_hole_images`. Tip je v appce na náhledu i ve fullscreen.
 
 ## Rozsah v1
 Jen fotbalgolf, 20 plánků. Minigolf/adventure později.

@@ -554,7 +554,9 @@ export async function scorecardRoutes(app: FastifyInstance) {
         playerCount: roster.length,
         winnerName: winner?.name ?? "",
         winnerTotal: winner?.total ?? 0,
-        shareCardUrl: shareAt ? shareCardPublicUrl(round.id, shareAt) : null,
+        shareCardUrl: shareAt
+          ? `${publicOrigin(request)}${shareCardPublicUrl(round.id, shareAt)}`
+          : null,
         standings: roster.slice(0, 6).map((p) => ({
           name: p.name,
           total: p.total,

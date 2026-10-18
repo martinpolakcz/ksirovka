@@ -33,13 +33,17 @@ export const hideRoundSchema = z.object({
   hidden: z.boolean(),
 });
 
-const emptyToNull = z
-  .string()
-  .trim()
-  .max(1000)
-  .nullable()
-  .optional()
-  .transform((value) => (value ? value : null));
+/** undefined = pole v PATCH nebylo; prázdný string = vymazat. Nikdy neměnit undefined na null. */
+const optionalText = (max: number) =>
+  z
+    .union([z.string(), z.null()])
+    .optional()
+    .transform((value) => {
+      if (value === undefined) return undefined;
+      if (value == null) return null;
+      const trimmed = value.trim();
+      return trimmed === "" ? null : trimmed.slice(0, max);
+    });
 
 export const uploadCourseImageSchema = z.object({
   gameType: z.enum(["fotbalgolf", "minigolf", "adventure"]),
@@ -52,14 +56,8 @@ export const courseHolePatchSchema = z.object({
   hole: z.number().int().min(1).max(20),
   closed: z.boolean().optional(),
   par: z.number().int().min(1).max(8).optional(),
-  imageUrl: emptyToNull,
-  tip: z
-    .string()
-    .trim()
-    .max(160)
-    .nullable()
-    .optional()
-    .transform((value) => (value ? value : null)),
+  imageUrl: optionalText(1000),
+  tip: optionalText(160),
 });
 
 export const adminRoundsQuerySchema = z.object({

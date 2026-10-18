@@ -2,7 +2,7 @@
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
 > **Stav:** Produkční API+web na VPS běží (`4403a4c`)  
-> **Poslední aktualizace:** 2026-10-18 09:30
+> **Poslední aktualizace:** 2026-10-18 11:40
 
 ---
 
@@ -143,7 +143,7 @@ curl -fsS https://ksirovka.martinpolak.cz/health
 Postgres **nerecreatuj** kvůli env — `POSTGRES_PASSWORD` platí jen při prvním startu volume. Do API se dostane jen to, co je ve `deploy/docker-compose.yml` u `environment:` (`PG_PASSWORD`, `ADMIN_*`, `CORS_ORIGIN`, `LEGACY_SITE_URL`).
 
 #### iOS Scorecard (EAS → App Store Connect)
-Aktuální IPA v TestFlight: **1.0.0 (16)**. EAS **1.0.0 (17)** `badd6c0e` běží, auto-submit `1aa5f527` (2026-10-18 09:28) — tlačítka, share název, selfie na TV. EAS image `sdk-54`. Rollback iOS = **1.0.0 (16)** `d8ab3c01`.
+Aktuální IPA v TestFlight: **1.0.0 (16)**. EAS **1.0.0 (17)** ve stavbě (tlačítka, share název, selfie). Další: **1.0.0 (18)** tip na plánku + par z API. EAS image `sdk-54`. Rollback iOS = **1.0.0 (16)** `d8ab3c01`.
 
 #### Android Scorecard (EAS → Google Play)
 Účet schválený 2026-09-23. AAB **1.0.0 (12)** `20085777` se staví (2026-10-18). Předchozí **1.0.0 (11)** `676351d6` v EAS. `eas submit` pořád bez Service Account JSON. V Console zůstává AAB **1.0.0 (7)** `8ef4aa05`. Playbook: `rhino/android-play-store.md`.
@@ -206,8 +206,9 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Nasadit `e79e54e`** — 2026-09-25. Unikátní přezdívky (`score_profiles` + `POST /scorecard/profile`). `/health` IPv4 i z VPS IPv6 = `e79e54e`. Záloha `ksirovka-20260925-104312.sql.gz`. Rollback = `9afc089`.
 - [x] **Nasadit `9b01dcf`** — 2026-09-25. `GET /scorecard/profile?email=` pro doplnění přezdívky. `/health` A i IPv6 z VPS = `9b01dcf`. Záloha `ksirovka-20260925-131651.sql.gz`. Rollback = `e79e54e`.
 - [x] **Scorecard: 20 jamek, uložení, landscape, share karta** — 2026-10-17. Nasazeno API `c16b46e` (migrace `0005`, `/admin/jamky`, oficiál = otevřené jamky). Mobil app2: poslední jamka Alert Chceš uložit?, SCORECARD, landscape tabulka, skip, share PNG sheet. iOS **1.0.0 (15)** v App Store Connect. Android AAB **1.0.0 (10)** v EAS, Play submit bez service account.
-- [ ] **Otestovat kolo v TestFlight 17** — tlačítka pod jamkou, share název, selfie na TV, plánky z `/admin/jamky`.
-- [x] **Nasadit share kartu + plánky PNG** — 2026-10-18. API `4403a4c` (`/health` sedí). Migrace `0007`/`0008`. Admin nahrává PNG na `/uploads/holes/{hra}/{n}`, tip má tlačítko Uložit. iOS EAS 17 + auto-submit; Android AAB 12 ve stavbě. Rollback API = `3070e34`.
+- [ ] **Otestovat kolo v TestFlight 17/18** — 17: tlačítka, share název, selfie upload. 18: tip na plánku (náhled i fullscreen), par z `/admin/jamky`.
+- [x] **Nasadit share kartu + plánky PNG** — 2026-10-18. API `4403a4c`. Migrace `0007`/`0008`. Rollback API = `3070e34`.
+- [x] **Admin jamky: par + tip nesaže plánek** — 2026-10-18. Zod `optionalText` už nemění vynechané pole na `null`. `/admin/jamky` má par 1–8 (default 2) a jedno Uložit (par+tip). TV: mřížka Právě dohráli + poslední selfie v panelu. Mobil: tip na fotce i ve fullscreen. Čeká commit + deploy API + EAS **1.0.0 (18)**.
 - [x] **TV reklamy z ksirovka.cz** — 2026-09-20. 15 záznamů v `tv_promos` lokálně i na prod (8 původních + 7 z hero/dlaždic). Image pořád `9afc089`, jen data. `npm run db:seed-tv` doplní chybějící.
 - [ ] Import obsahu do produkční DB (`import:content`) — homepage z API je zatím prázdná.
 - [x] **Mobil: název na ikoně Kšírovka** — 2026-09-20. `expo.name` + `CFBundleDisplayName` + Android `label` = Kšírovka. iOS 1.0.0 (7) v TestFlight (`9ccdda44` / submit `409d2554`). Android AAB `414162cf` + APK `926c8d8c`. Play submit pořád bez service account.
@@ -228,10 +229,10 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Unikátní přezdívka** — 2026-09-25. `POST /api/v1/scorecard/profile` + tabulka `score_profiles` (unique `nickname_normalized`). Stejný e-mail smí svou přezdívku měnit. Cizí přezdívka nebo jméno z cizího odeslaného kola = 409. Mobil bez on-line uložení nepustí. Migrace `0004`. Na prod v `e79e54e` (ověřeno: prázdný POST vrací 400 validation).
 - [x] **Nové kolo: lepicí start** — 2026-09-25. Tlačítko Začít kolo je pořád dole, typ/formát/hráči se srolují.
 - [x] **Scorecard: zápis + potvrzení jamky** — 2026-09-25. Skóre je hned nahoře, jamky jako tečky. Par je jen návrh; na pořadí a do kola se zapíše až **Potvrdit jamku**. Zrušit je text pod tlačítkem nad safe area, ne uříznuté.
-- [x] **Plánky jamek ve hře** — 2026-10-17. API `3070e34` (migrace `0006`). 2026-10-18: místo URL pole je upload PNG/JPEG na `/uploads/holes/…` + tlačítko Uložit tip (migrace `0008`). Mobil: náhled + fullscreen. iOS **1.0.0 (16)** v ASC do EAS 17. Fotky karet se nahrávají v `/admin/jamky`. Detail: `rhino/hole-maps.md`.
+- [x] **Plánky jamek ve hře** — 2026-10-17. API `3070e34` (migrace `0006`). 2026-10-18: upload PNG/JPEG na `/uploads/holes/…`. Tip je v appce na náhledu i ve fullscreen. Par u jamky se mění v adminu. Detail: `rhino/hole-maps.md`.
 - [x] **Scorecard: tři akce jako tlačítka** — 2026-10-18. Přeskočit / Ukončit / Zrušit pod Potvrdit jamku jsou orámovaná tlačítka (ikona + krátký popisek), ne zlatý text. Zrušit je červené.
 - [x] **Share karta: copy + název souboru** — 2026-10-18. Věta „Nakopal jsem to sem…“ z karty pryč. Soubor `ksirovka_YYYY-MM-DD_jmeno.jpg` (Praha, bez diakritiky).
-- [x] **Share karta na TV** — 2026-10-18 v kódu. Po uložení kola se otevře selfie. Fotka (i karta bez fotky po Sdílet) jde do `score_round_share_cards` (bytea). `/tv` ukáže stejnou kartu přes celou obrazovku, i když selfie přijde až po prvním „Nové kolo“. Až po nasazení API + novém TestFlight.
+- [x] **Share karta na TV** — 2026-10-18. Overlay 11 s + karta zůstane v panelu Právě dohráli. Stats vrací absolutní `shareCardUrl` (Host včetně portu).
 - [ ] **Liquid glass na chromu scorecard** — pin `LiveStandings` + akcí přes `expo-blur`, ať mřížka jamek jede pod lištou. Audit: `rhino/ui-liquid-glass.md`.
 - [ ] Import obsahu do produkční DB (`import:content`) až poběží API.
 - [ ] Staging na VPS (`./scripts/deploy.sh --staging`) s vlastními daty.
@@ -257,7 +258,8 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Nové kolo: start je pod foldem** — 2026-09-25. Varianta A: lepicí **Začít kolo** dole, nastavení se sroluje nad ním.
 - [x] **Plánky jamek (UX)** — 2026-10-17. Schváleno: plánek na aktuální jamce, ne mezikrok po uložení.
 - [x] **Share copy** — 2026-10-18. Divná věta na kartě pryč; zůstává skóre, jméno, „Zahraj si na Kšírovce · Brno“.
-- [x] **Commit + deploy share/TV + EAS 17** — 2026-10-18. API `4403a4c` na prod. Mobil commity `430a737` + bump `3dccd73`. TestFlight 17 až EAS doběhne.
+- [x] **Commit + deploy share/TV + EAS 17** — 2026-10-18. API `4403a4c` na prod. Mobil `430a737` + bump `3dccd73`.
+- [ ] **Commit + deploy tip/par/TV zarovnání + EAS 18** — kód hotový 2026-10-18 11:40, čeká git push / CI / `deploy.sh` / EAS.
 
 ---
 
@@ -277,6 +279,9 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 | BUG-06 | `/tv` na mobilu rozbitý layout | 2026-09-20 | Responzivní sloupec do `lg`; image `9afc089` |
 | BUG-07 | iframe `/tv` na martinpolak.cz freelancer | 2026-09-20 | Caddy: `/tv` bez X-Frame-Options, `frame-ancestors` jen martinpolak.cz. Image pořád `9afc089`. |
 | BUG-08 | Jazyk v appce pod ikonami status baru | 2026-09-24 | Header row v layoutu pod SafeArea; `LanguagePicker` už není absolute. |
+| BUG-09 | Uložení tipu v `/admin/jamky` smazalo plánek | 2026-10-18 | Zod `undefined → null`; `optionalText` vynechané pole nechá. Ověřeno lokálně: upload + Uložit tip, `Odstranit plánek` zůstalo. |
+| BUG-10 | TV Právě dohráli: rozhozené sloupce, chybí selfie | 2026-10-18 | CSS grid 3 sloupce + poslední `shareCardUrl` v panelu; absolutní URL z Host. |
+| BUG-11 | Tip jak zahrát chyběl u plánku v appce (náhled i fullscreen) | 2026-10-18 | `HolePlan` overlay + fullscreen box; refetch course při focus scorecard. Částečně i BUG-09 (tip byl smazaný). |
 
 ---
 
@@ -304,9 +309,9 @@ Mobil (Expo) --POST /api/v1/scorecard/rounds--> Fastify + Postgres (VPS)
 - Login v appce je lokální profil (e-mail + jméno + přezdívka v AsyncStorage), ne OIDC. Bez kompletního profilu appka nepustí dál. Přezdívka musí být unikátní (`score_profiles`); na žebříček jde přezdívka.
 - Store build jde na HTTPS `https://ksirovka.martinpolak.cz/api/v1`.
 - TV admin `/admin/kola` maže kola (cascade hráči + jamky). `/admin/jamky` vypíná jamky v rekonstrukci (`PATCH /api/v1/admin/course`). Cron retence běží v procesu API (ne systemd): jednou denně v `runHour` Europe/Prague, maže kola starší než `retentionDays`. Výchozí vypnuto.
-- Pars už nežijí jen v TS: default 20× par 2 v `score_course_holes`. Appka si layout stáhne, bez API padá na stejný fallback. Plánek jamky = nahraný PNG/JPEG v `score_course_hole_images`, veřejně na `/uploads/holes/{hra}/{n}` (ne URL zvenku, ne soubor v IPA). Admin `/admin/jamky` má nahrání souboru a tlačítko **Uložit tip** — dřív se URL ztrácela, protože se ukládala jen při opuštění pole.
+- Pars žijí v `score_course_holes` (default 2, admin 1–8). Appka si layout stáhne; bez API padá na 20× par 2. Plánek = PNG/JPEG v `score_course_hole_images`, veřejně `/uploads/holes/{hra}/{n}`. PATCH jamky posílá jen změněná pole — vynechané `undefined` nesmí spadnout na `null` (mazalo by plánek).
 - TV reklamy: tabulka `tv_promos`, admin `/admin` → reklamy, board `GET /api/v1/tv/board`. Výchozí sada 15 kusů v `apps/api/src/data/tv-promos.ts` (hero + dlaždice ksirovka.cz). Na prod nahráno 2026-09-20 (15 řádků).
-- Share karta kola: tabulka `score_round_share_cards` (1:1 na kolo, cascade s retencí). Mobil po selfie/sdílení POSTuje JPEG (max ~2,5 MB). Stats vrací `shareCardUrl`. `/tv` nejdřív slaví nové kolo textem; až karta dorazí, ukáže ji fullscreen 11 s. Caddy `request_body max_size 5MB`.
+- Share karta kola: tabulka `score_round_share_cards` (1:1 na kolo, cascade s retencí). Mobil po selfie/sdílení POSTuje JPEG (max ~2,5 MB). Stats vrací absolutní `shareCardUrl`. `/tv` slaví overlay 11 s a poslední kartu nechá v panelu Právě dohráli. Caddy `request_body max_size 5MB`.
 
 ---
 

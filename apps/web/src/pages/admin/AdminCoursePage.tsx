@@ -23,7 +23,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
 function HoleEditor({
   gameType,
   hole,
-  onSaveTip,
+  onSave,
   onUpload,
   onRemoveImage,
   onToggleClosed,
@@ -31,13 +31,14 @@ function HoleEditor({
 }: {
   gameType: ScoreGameType;
   hole: CourseHole;
-  onSaveTip: (tip: string | null) => void;
+  onSave: (payload: { tip: string | null; par: number }) => void;
   onUpload: (file: File) => void;
   onRemoveImage: () => void;
   onToggleClosed: (closed: boolean) => void;
   busy: boolean;
 }) {
   const [tip, setTip] = useState(hole.tip ?? "");
+  const [par, setPar] = useState(hole.par);
   const [pickedName, setPickedName] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
@@ -46,19 +47,35 @@ function HoleEditor({
   }, [hole.tip]);
 
   useEffect(() => {
+    setPar(hole.par);
+  }, [hole.par]);
+
+  useEffect(() => {
     setPickedName(null);
     setPreview(null);
   }, [hole.imageUrl, hole.hole, gameType]);
 
   const shownImage = preview || hole.imageUrl;
-  const tipDirty = (tip.trim() || null) !== (hole.tip ?? null);
+  const nextPar = Number.isFinite(par) ? Math.min(8, Math.max(1, Math.round(par))) : 2;
+  const dirty = (tip.trim() || null) !== (hole.tip ?? null) || nextPar !== hole.par;
 
   return (
     <article className="rounded-2xl border border-ink/10 bg-white p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-display text-2xl">{hole.hole}</p>
-          <p className="text-sm text-ink/50">par {hole.par}</p>
+          <label className="mt-1 flex items-center gap-2 text-sm text-ink/50">
+            par
+            <input
+              type="number"
+              min={1}
+              max={8}
+              value={par}
+              disabled={busy}
+              onChange={(event) => setPar(Number(event.target.value))}
+              className="w-14 rounded-lg border border-ink/15 px-2 py-1 text-sm text-ink"
+            />
+          </label>
         </div>
         <label className="inline-flex items-center gap-2 text-sm">
           <input
@@ -116,11 +133,11 @@ function HoleEditor({
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={busy || !tipDirty}
-          onClick={() => onSaveTip(tip.trim() || null)}
+          disabled={busy || !dirty}
+          onClick={() => onSave({ tip: tip.trim() || null, par: nextPar })}
           className="rounded-full bg-orange px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
         >
-          Uložit tip
+          Uložit
         </button>
         {hole.imageUrl ? (
           <button
@@ -199,9 +216,9 @@ export function AdminCoursePage() {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <h1 className="font-display text-3xl">Jamky</h1>
       <p className="mt-2 max-w-2xl text-sm text-ink/70">
-        Vypni jamku v rekonstrukci a nahraj plánek (PNG/JPEG). Soubor zůstane na webu pod{" "}
-        <code className="text-xs">/uploads/holes/…</code> a appka si ho stáhne. Bez fotky zůstane jen
-        zápis skóre. Tip ulož tlačítkem — samo se neukládá.
+        U každé jamky můžeš změnit par (výchozí 2), nahrát plánek (PNG/JPEG) a tip. Soubor zůstane na
+        webu pod <code className="text-xs">/uploads/holes/…</code>. Tlačítko Uložit mění jen par a tip —
+        plánek se nenahrazuje.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
@@ -233,7 +250,7 @@ export function AdminCoursePage() {
             hole={hole}
             busy={busy}
             onToggleClosed={(closed) => patchMutation.mutate({ gameType, hole: hole.hole, closed })}
-            onSaveTip={(tip) => patchMutation.mutate({ gameType, hole: hole.hole, tip })}
+            onSave={({ tip, par }) => patchMutation.mutate({ gameType, hole: hole.hole, tip, par })}
             onUpload={(file) => uploadMutation.mutate({ gameType, hole: hole.hole, file })}
             onRemoveImage={() => patchMutation.mutate({ gameType, hole: hole.hole, imageUrl: null })}
           />

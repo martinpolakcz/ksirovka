@@ -225,6 +225,7 @@ export function TvBoardPage() {
   const rest = useMemo(() => stats?.playerLeaderboard.slice(3, 10) ?? [], [stats]);
   const hardest = useMemo(() => stats?.hardestHoles.slice(0, 3) ?? [], [stats]);
   const recent = dayPulse?.recentRounds.slice(0, 3) ?? [];
+  const latestShare = dayPulse?.recentRounds.find((round) => round.shareCardUrl) ?? null;
   const sceneBest = stats?.playerLeaderboard[0];
   const activeAd = featured[featuredIndex % Math.max(featured.length, 1)];
 
@@ -318,18 +319,33 @@ export function TvBoardPage() {
           </div>
 
           <div className="flex flex-col gap-4 lg:min-h-0">
-            <div className="tv-card p-4 lg:p-5">
+            <div className="tv-card flex min-h-0 flex-col p-4 lg:p-5">
               <p className="text-sm font-semibold text-teal">Právě dohráli</p>
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-3 grid gap-y-2">
                 {recent.length === 0 && <li className="text-ink/45">První kolo dne ještě padne.</li>}
                 {recent.map((round) => (
-                  <li key={round.id} className="flex items-center justify-between gap-3">
+                  <li
+                    key={round.id}
+                    className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-3"
+                  >
                     <span className="truncate">{round.winnerName}</span>
                     <span className="text-sm text-ink/45">{GAME_LABELS[round.gameType]}</span>
-                    <span className="text-xl font-semibold text-orange lg:text-2xl">{round.winnerTotal}</span>
+                    <span className="text-right text-xl font-semibold tabular-nums text-orange lg:text-2xl">
+                      {round.winnerTotal}
+                    </span>
                   </li>
                 ))}
               </ul>
+              {latestShare?.shareCardUrl ? (
+                <img
+                  src={latestShare.shareCardUrl}
+                  alt={`${latestShare.winnerName} · ${latestShare.winnerTotal}`}
+                  className="mt-3 mx-auto max-h-44 w-auto max-w-full rounded-xl object-contain"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : null}
             </div>
             <div className="tv-card min-h-0 flex-1 p-4 lg:p-5">
               {panel === "story" && dayPulse && <StoryStats summary={dayPulse.summary} />}

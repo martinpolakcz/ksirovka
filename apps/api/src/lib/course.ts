@@ -115,7 +115,13 @@ export function holeImagePublicPath(gameType: GameType, hole: number, version?: 
   return `${path}?v=${stamp}`;
 }
 
-export function publicOrigin(request: { protocol: string; hostname: string }): string {
+export function publicOrigin(request: {
+  protocol: string;
+  hostname: string;
+  headers?: { host?: string };
+}): string {
+  const host = request.headers?.host?.split(",")[0]?.trim();
+  if (host) return `${request.protocol}://${host}`;
   return `${request.protocol}://${request.hostname}`;
 }
 
