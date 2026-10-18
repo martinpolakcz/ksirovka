@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`e0ef76b`)  
-> **Poslední aktualizace:** 2026-10-18 17:59
+> **Stav:** Produkční API+web na VPS běží (`c426816`)  
+> **Poslední aktualizace:** 2026-10-18 18:03
 
 ---
 
@@ -66,8 +66,8 @@ Expo účet: `martinpolak` (`martin.polak.cz@gmail.com`). EAS projekt: `@martinp
   - `ksirovka.martinpolak.cz` **A = 62.83.17.63**. `/health` přes IPv4 = `e79e54e`.
   - **AAAA = `2a0a:4cc0:61:4215:c477:34ff:feb2:9147`**. Z VPS `/health` přes `-6` = `e79e54e`. Z notebooku IPv6 timeout (lokální síť, ne VPS).
 - **SSH:** `$HOME/.ssh/netcup_ksirovka_ed25519` → `root@62.83.17.63` (Debian 13). Docker nainstalován `server-setup.sh`.
-- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `e0ef76b`, CI success, image `ghcr.io/martinpolakcz/ksirovka:e0ef76b`.
-- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` A i z VPS IPv6 = `e0ef76b` (ověřeno 2026-10-18 17:49). Migrace `0013` tabulka `tv_promo_images`; drizzle 14 záznamů. Záloha před deployem `ksirovka-20261018-154811.sql.gz` (20 tabulek). Rollback = `1f1d713`. Jamka 2 má tip, plánek je `null` — nahrát znovu v `/admin/jamky`.
+- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `c426816`, CI success, image `ghcr.io/martinpolakcz/ksirovka:c426816`.
+- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` A i z VPS IPv6 = `c426816` (ověřeno 2026-10-18 18:03). Migrace `0013` tabulka `tv_promo_images`; drizzle 14 záznamů. Záloha před deployem `ksirovka-20261018-160029.sql.gz` (21 tabulek). Rollback = `e0ef76b`. Jamka 2 má tip, plánek je `null` — nahrát znovu v `/admin/jamky`.
 - **Lokálně (2026-09-25):** Colima znovu nastartovaná. Postgres volume byl plný (panic `No space left`); po `docker image prune -af` (~4.8 GB) je healthy, migrace `0004` aplikovaná, API na `:3801`. Expo Go Metro LAN `exp://192.168.1.37:8081`.
 
 Jediné místo s IP a doménami: `deploy/target.env`.
@@ -233,7 +233,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Scorecard: tři akce jako tlačítka** — 2026-10-18. Přeskočit / Ukončit / Zrušit pod Potvrdit jamku jsou orámovaná tlačítka (ikona + krátký popisek), ne zlatý text. Zrušit je červené.
 - [x] **Share karta: copy + název souboru** — 2026-10-18. Věta „Nakopal jsem to sem…“ z karty pryč. Soubor `ksirovka_YYYY-MM-DD_jmeno.jpg` (Praha, bez diakritiky).
 - [x] **Share karta na TV** — 2026-10-18. Overlay 11 s. Pódium má původní jméno/skóre/kola a fotku hráče (ne celou brand kartu místo #1). Právě dohráli = 6 minikaret s fotkou, nejstarší vlevo, nový zprava. `shareCardUrl` je relativní `/api/v1/…` (lokální proxy i prod stejný origin).
-- [x] **TV overlay bez fotky = stejná karta** — 2026-10-18. Android bez fotky nahrává kolo hned, share JPEG až po fotce ze hry. Dřív to na `/tv` spustilo bílý overlay (Nové kolo, obří jméno, létající míček). Teď je vždy tmavé `Právě dohráli` 11 s: s JPEG share kartou, bez ní HTML karta (logo, profilová fotka nebo iniciála, hra, skóre, vs par, Brno). Mobil se nemění — stačí web.
+- [x] **TV overlay bez fotky = stejná karta** — 2026-10-18 na prod `c426816`. Android bez fotky nahrává kolo hned, share JPEG až po fotce ze hry. Dřív to na `/tv` spustilo bílý overlay (Nové kolo, obří jméno, létající míček). Teď je vždy tmavé `Právě dohráli` 11 s: s JPEG share kartou, bez ní HTML karta (logo, profilová fotka nebo iniciála, hra, skóre, vs par, Brno). Mobil se nemění — stačí web.
 - [ ] **Liquid glass na chromu scorecard** — pin `LiveStandings` + akcí přes `expo-blur`, ať mřížka jamek jede pod lištou. Audit: `rhino/ui-liquid-glass.md`.
 - [x] **Admin Strategie** — 2026-10-18 na prod `7eb23e6`. `/admin/strategie`: kdy hrají, mix her, vs par, kalendář, roster. Klik na den otevře pop-up (kdo, hra, vs par, poprvé, čas). Kampaně k oslovení, CSV/e-maily. API `GET /admin/marketing` (21 hráčů). iPhone/Android a locale až z appky 21.
 - [x] **Hráč, fotky, kampaně v appce** — 2026-10-18 na prod `7eb23e6`. Pop-up hráče (tabulka + den) s historií kol. Migrace `0010`: `birth_year`, `photo` bytea, `notices_opt_in`, tabulky `score_notices` + `score_notice_targets`. Login v app2 má selfie, rok narození a souhlas. TV/`/vysledky` berou profilovou fotku (fallback iniciála); share karta = fotka ze hry do galerie a TV slotu `gallery`. Admin skládá Novinka / Horká událost / Stalo se, appka po startu `GET /scorecard/notices`. EAS iOS **1.0.0 (21)** + Android 16 ve frontě. Pravý Expo push až později.
@@ -276,6 +276,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Commit + deploy admin Strategie + 0010** — 2026-10-18. API `7eb23e6` na prod (`/health` A i IPv6 sedí). Záloha `ksirovka-20261018-141517.sql.gz`. Rollback = `0bffac4`. Mobil `62f777b` + bump `18705f4`. EAS iOS **1.0.0 (21)** `cabd99b5` + Android AAB 16 `d392ea43`. Telefony uvidí inbox až po TestFlight/Play.
 - [x] **Commit + deploy pódium/galerie/ticker/kampaně** — 2026-10-18. API `1f1d713` na prod (`/health` A i IPv6 sedí). CI https://github.com/martinpolakcz/ksirovka/actions/runs/39139927510. Záloha `ksirovka-20261018-152037.sql.gz`. Rollback = `7eb23e6`. Staging se nenasazoval (pořád není živý); migrace 0011/0012 jen přidávají sloupce. Mobil/EAS beze změny.
 - [x] **Commit + deploy kroužky/rohy/upload reklam** — 2026-10-18. API `e0ef76b` na prod (`/health` A i IPv6 sedí). CI https://github.com/martinpolakcz/ksirovka/actions/runs/39141974074. Záloha `ksirovka-20261018-154811.sql.gz`. Rollback = `1f1d713`. Migrace `0013` jen přidává tabulku. Mobil/EAS beze změny.
+- [x] **Commit + deploy TV overlay bez fotky** — 2026-10-18. API `c426816` na prod (`/health` A i IPv6 sedí). CI https://github.com/martinpolakcz/ksirovka/actions/runs/39143025738. Záloha `ksirovka-20261018-160029.sql.gz` (21 tabulek). Rollback = `e0ef76b`. Žádná migrace. Mobil/EAS beze změny. Staging se nenasazoval.
 
 ---
 
