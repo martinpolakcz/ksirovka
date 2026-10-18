@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`1f1d713`)  
-> **Poslední aktualizace:** 2026-10-18 17:46
+> **Stav:** Produkční API+web na VPS běží (`e0ef76b`)  
+> **Poslední aktualizace:** 2026-10-18 17:49
 
 ---
 
@@ -66,8 +66,8 @@ Expo účet: `martinpolak` (`martin.polak.cz@gmail.com`). EAS projekt: `@martinp
   - `ksirovka.martinpolak.cz` **A = 62.83.17.63**. `/health` přes IPv4 = `e79e54e`.
   - **AAAA = `2a0a:4cc0:61:4215:c477:34ff:feb2:9147`**. Z VPS `/health` přes `-6` = `e79e54e`. Z notebooku IPv6 timeout (lokální síť, ne VPS).
 - **SSH:** `$HOME/.ssh/netcup_ksirovka_ed25519` → `root@62.83.17.63` (Debian 13). Docker nainstalován `server-setup.sh`.
-- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `1f1d713`, CI success, image `ghcr.io/martinpolakcz/ksirovka:1f1d713`.
-- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` A i z VPS IPv6 = `1f1d713` (ověřeno 2026-10-18 17:21). Migrace `0011` (`ticker_seconds`) + `0012` (`podium_since`) na `tv_data_settings`; drizzle 13 záznamů. Noční pódium na prod **vypnuté**, ticker 36 s. Záloha před deployem `ksirovka-20261018-152037.sql.gz` (20 tabulek). Rollback = `7eb23e6`. Jamka 2 má tip, plánek je `null` — nahrát znovu v `/admin/jamky`.
+- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `e0ef76b`, CI success, image `ghcr.io/martinpolakcz/ksirovka:e0ef76b`.
+- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` A i z VPS IPv6 = `e0ef76b` (ověřeno 2026-10-18 17:49). Migrace `0013` tabulka `tv_promo_images`; drizzle 14 záznamů. Záloha před deployem `ksirovka-20261018-154811.sql.gz` (20 tabulek). Rollback = `1f1d713`. Jamka 2 má tip, plánek je `null` — nahrát znovu v `/admin/jamky`.
 - **Lokálně (2026-09-25):** Colima znovu nastartovaná. Postgres volume byl plný (panic `No space left`); po `docker image prune -af` (~4.8 GB) je healthy, migrace `0004` aplikovaná, API na `:3801`. Expo Go Metro LAN `exp://192.168.1.37:8081`.
 
 Jediné místo s IP a doménami: `deploy/target.env`.
@@ -242,7 +242,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **TV ticker: rychlost v adminu** — 2026-10-18 na prod `1f1d713`. `/admin` Reklamy má posuvník 8–120 s (default 36). Ukládá `ticker_seconds` do `tv_data_settings` (migrace `0011`). TV si to vezme z `GET /tv/board` do 10 s.
 - [x] **Historie odeslaných kampaní** — 2026-10-18 na prod `1f1d713`. Ve Skladbě zprávy je seznam odeslaných (`GET /admin/notices`): druh, čas, titulek, odesláno/přečteno. Klik otevře pop-up s textem a příjemci, **Použít znovu** doplní skladbu.
 - [x] **TV pódium bez mazání kol** — 2026-10-18 na prod `1f1d713`. Migrace `0012` `tv_data_settings.podium_since`. Cron/`Vyčistit pódium` jen posune cutoff; kola se nemažou. `/tv` medaile z `podiumLeaderboard`; 4–10 a Právě dohráli z celého období. `/admin/galerie` stáhne fotky (401 bez cookie). Noční pódium na prod vypnuté.
-- [ ] **Nahrát obrázek k reklamě** — 2026-10-18 lokálně. Ve formuláři Nová reklama je **Nahrát PNG nebo JPEG** (max 2,5 MB). Ukládá se do `tv_promo_images` (migrace `0013`), veřejně `/uploads/promos/:id`. URL pole zůstává jako alternativa. Na prod ještě `1f1d713`.
+- [x] **Nahrát obrázek k reklamě** — 2026-10-18 na prod `e0ef76b`. Ve formuláři Nová reklama je **Nahrát PNG nebo JPEG** (max 2,5 MB). Ukládá se do `tv_promo_images` (migrace `0013`), veřejně `/uploads/promos/:id`. URL pole zůstává jako alternativa.
 - [x] **Dětské skinny (vlastní vzhled)** — 2026-10-18 v app2, EAS 21. Můj profil (`/login`) má mřížku: Kšírovka (default), Liga, Modrý svět, Pouštní palác, Okruh, Ledová říše. Žádné licencované značky. `themeId` v persist store vedle `locale`. Chrom (Screen, Card, Button, scorecard) bere pack; share karta, TV, splash a logo zůstávají Kšírovka.
 - [x] **Gramatika foursome** — 2026-10-18 v EAS 21. „Čtveřice sdílí jednu míčku“ pryč. Fotbalgolf: **jeden míč** / vlastní míč. Minigolf a adventure: **jeden míček** / vlastní míček. Stejný rozdíl v sk/en/de/pl/vi.
 - [ ] Import obsahu do produkční DB (`import:content`) až poběží API.
@@ -274,6 +274,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **TV pódium + 6 fotek** — 2026-10-18. `0bffac4` odkaz Výsledky v hlavičce (`/health` sedí). Záloha `ksirovka-20261018-113955.sql.gz`. Rollback = `bd5b67d`.
 - [x] **Commit + deploy admin Strategie + 0010** — 2026-10-18. API `7eb23e6` na prod (`/health` A i IPv6 sedí). Záloha `ksirovka-20261018-141517.sql.gz`. Rollback = `0bffac4`. Mobil `62f777b` + bump `18705f4`. EAS iOS **1.0.0 (21)** `cabd99b5` + Android AAB 16 `d392ea43`. Telefony uvidí inbox až po TestFlight/Play.
 - [x] **Commit + deploy pódium/galerie/ticker/kampaně** — 2026-10-18. API `1f1d713` na prod (`/health` A i IPv6 sedí). CI https://github.com/martinpolakcz/ksirovka/actions/runs/39139927510. Záloha `ksirovka-20261018-152037.sql.gz`. Rollback = `7eb23e6`. Staging se nenasazoval (pořád není živý); migrace 0011/0012 jen přidávají sloupce. Mobil/EAS beze změny.
+- [x] **Commit + deploy kroužky/rohy/upload reklam** — 2026-10-18. API `e0ef76b` na prod (`/health` A i IPv6 sedí). CI https://github.com/martinpolakcz/ksirovka/actions/runs/39141974074. Záloha `ksirovka-20261018-154811.sql.gz`. Rollback = `1f1d713`. Migrace `0013` jen přidává tabulku. Mobil/EAS beze změny.
 
 ---
 
@@ -296,8 +297,8 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 | BUG-09 | Uložení tipu v `/admin/jamky` smazalo plánek | 2026-10-18 | Zod `undefined → null`; `optionalText` vynechané pole nechá. Ověřeno lokálně: upload + Uložit tip, `Odstranit plánek` zůstalo. |
 | BUG-10 | TV Právě dohráli: rozhozené sloupce, chybí selfie | 2026-10-18 | CSS grid. 12:21: celá #1 karta = share graphic (špatně). 12:33: pódium původní + fotka, 6 minikaret FIFO zprava. |
 | BUG-11 | Tip jak zahrát chyběl u plánku v appce (náhled i fullscreen) | 2026-10-18 | `HolePlan` overlay + fullscreen box; refetch course při focus scorecard. Částečně i BUG-09 (tip byl smazaný). |
-| BUG-12 | TV pódium: žlutý kruh u fotky + bílý kruh navíc, nesedí | 2026-10-18 | `ring` + overflow na jednom divu. `TvFace` = zlatý okraj paddingem, fotka `display:block` uvnitř. Lokálně, na prod ještě `1f1d713`. |
-| BUG-13 | TV overlay dohrané hry: rohy karty měly černé „uši“ | 2026-10-18 | JPEG má černé rohy + malované zaoblení; CSS `rounded-[28px]` nesedělo. `rounded-[8%/6.4%]` ořízne černé. Lokálně. |
+| BUG-12 | TV pódium: žlutý kruh u fotky + bílý kruh navíc, nesedí | 2026-10-18 | `TvFace` = zlatý okraj paddingem. Na prod v `e0ef76b`. |
+| BUG-13 | TV overlay dohrané hry: rohy karty měly černé „uši“ | 2026-10-18 | `rounded-[8%/6.4%]` ořízne černé JPEG kouty. Na prod v `e0ef76b`. |
 
 ---
 
