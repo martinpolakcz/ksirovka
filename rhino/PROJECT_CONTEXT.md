@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`bd5b67d`); odkaz TV → /vysledky čeká na deploy  
-> **Poslední aktualizace:** 2026-10-18 13:40
+> **Stav:** Produkční API+web na VPS běží (`0bffac4`)  
+> **Poslední aktualizace:** 2026-10-18 13:41
 
 ---
 
@@ -66,8 +66,8 @@ Expo účet: `martinpolak` (`martin.polak.cz@gmail.com`). EAS projekt: `@martinp
   - `ksirovka.martinpolak.cz` **A = 62.83.17.63**. `/health` přes IPv4 = `e79e54e`.
   - **AAAA = `2a0a:4cc0:61:4215:c477:34ff:feb2:9147`**. Z VPS `/health` přes `-6` = `e79e54e`. Z notebooku IPv6 timeout (lokální síť, ne VPS).
 - **SSH:** `$HOME/.ssh/netcup_ksirovka_ed25519` → `root@62.83.17.63` (Debian 13). Docker nainstalován `server-setup.sh`.
-- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `bd5b67d`, CI success, image `ghcr.io/martinpolakcz/ksirovka:bd5b67d`.
-- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` = `bd5b67d` (ověřeno 2026-10-18 13:35). QR na TV je plovoucí lístek vpravo dole, reklama má celý sloupec. Záloha před deployem `ksirovka-20261018-113302.sql.gz` (18 tabulek). Migrace `0007`+`0008`. Rollback = `df72689`. Jamka 2 má tip, plánek je `null` — nahrát znovu v `/admin/jamky`.
+- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `0bffac4`, CI success, image `ghcr.io/martinpolakcz/ksirovka:0bffac4`.
+- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` = `0bffac4` (ověřeno 2026-10-18 13:41). Na `/tv` je vpravo nahoře malé **Výsledky** → `/vysledky`. Záloha před deployem `ksirovka-20261018-113955.sql.gz` (18 tabulek). Migrace `0007`+`0008`. Rollback = `bd5b67d`. Jamka 2 má tip, plánek je `null` — nahrát znovu v `/admin/jamky`.
 - **Lokálně (2026-09-25):** Colima znovu nastartovaná. Postgres volume byl plný (panic `No space left`); po `docker image prune -af` (~4.8 GB) je healthy, migrace `0004` aplikovaná, API na `:3801`. Expo Go Metro LAN `exp://192.168.1.37:8081`.
 
 Jediné místo s IP a doménami: `deploy/target.env`.
@@ -260,7 +260,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Share copy** — 2026-10-18. Divná věta na kartě pryč; zůstává skóre, jméno, „Zahraj si na Kšírovce · Brno“.
 - [x] **Commit + deploy share/TV + EAS 17** — 2026-10-18. API `4403a4c` na prod. Mobil `430a737` + bump `3dccd73`.
 - [x] **Commit + deploy tip/par/TV zarovnání + EAS 19** — 2026-10-18. API `00654e3`. Mobil `6c1916a` + bump `5183b17`.
-- [x] **TV pódium + 6 fotek** — 2026-10-18. `bd5b67d` plovoucí QR. V hlavičce malé **Výsledky** → `/vysledky` (ještě nenasazeno). Záloha `ksirovka-20261018-113302.sql.gz`. Rollback = `df72689`.
+- [x] **TV pódium + 6 fotek** — 2026-10-18. `0bffac4` odkaz Výsledky v hlavičce (`/health` sedí). Záloha `ksirovka-20261018-113955.sql.gz`. Rollback = `bd5b67d`.
 
 ---
 
