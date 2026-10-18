@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`7eb23e6`)  
-> **Poslední aktualizace:** 2026-10-18 17:16
+> **Stav:** Produkční API+web na VPS běží (`1f1d713`)  
+> **Poslední aktualizace:** 2026-10-18 17:21
 
 ---
 
@@ -66,8 +66,8 @@ Expo účet: `martinpolak` (`martin.polak.cz@gmail.com`). EAS projekt: `@martinp
   - `ksirovka.martinpolak.cz` **A = 62.83.17.63**. `/health` přes IPv4 = `e79e54e`.
   - **AAAA = `2a0a:4cc0:61:4215:c477:34ff:feb2:9147`**. Z VPS `/health` přes `-6` = `e79e54e`. Z notebooku IPv6 timeout (lokální síť, ne VPS).
 - **SSH:** `$HOME/.ssh/netcup_ksirovka_ed25519` → `root@62.83.17.63` (Debian 13). Docker nainstalován `server-setup.sh`.
-- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `7eb23e6`, CI success, image `ghcr.io/martinpolakcz/ksirovka:7eb23e6`.
-- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` A i z VPS IPv6 = `7eb23e6` (ověřeno 2026-10-18 16:17). `/admin/strategie` na prod (login + `GET /admin/marketing` 200, 21 hráčů). Migrace `0009`+`0010` na `score_profiles` (platform, locale, birth_year, photo, notices_opt_in) a tabulky `score_notices` / `score_notice_targets`. Záloha před deployem `ksirovka-20261018-141517.sql.gz` (18 tabulek). Rollback = `0bffac4`. Jamka 2 má tip, plánek je `null` — nahrát znovu v `/admin/jamky`.
+- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `1f1d713`, CI success, image `ghcr.io/martinpolakcz/ksirovka:1f1d713`.
+- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` A i z VPS IPv6 = `1f1d713` (ověřeno 2026-10-18 17:21). Migrace `0011` (`ticker_seconds`) + `0012` (`podium_since`) na `tv_data_settings`; drizzle 13 záznamů. Noční pódium na prod **vypnuté**, ticker 36 s. Záloha před deployem `ksirovka-20261018-152037.sql.gz` (20 tabulek). Rollback = `7eb23e6`. Jamka 2 má tip, plánek je `null` — nahrát znovu v `/admin/jamky`.
 - **Lokálně (2026-09-25):** Colima znovu nastartovaná. Postgres volume byl plný (panic `No space left`); po `docker image prune -af` (~4.8 GB) je healthy, migrace `0004` aplikovaná, API na `:3801`. Expo Go Metro LAN `exp://192.168.1.37:8081`.
 
 Jediné místo s IP a doménami: `deploy/target.env`.
@@ -237,11 +237,11 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Admin Strategie** — 2026-10-18 na prod `7eb23e6`. `/admin/strategie`: kdy hrají, mix her, vs par, kalendář, roster. Klik na den otevře pop-up (kdo, hra, vs par, poprvé, čas). Kampaně k oslovení, CSV/e-maily. API `GET /admin/marketing` (21 hráčů). iPhone/Android a locale až z appky 21.
 - [x] **Hráč, fotky, kampaně v appce** — 2026-10-18 na prod `7eb23e6`. Pop-up hráče (tabulka + den) s historií kol. Migrace `0010`: `birth_year`, `photo` bytea, `notices_opt_in`, tabulky `score_notices` + `score_notice_targets`. Login v app2 má selfie, rok narození a souhlas. TV/`/vysledky` berou profilovou fotku (fallback iniciála); share karta = fotka ze hry do galerie a TV slotu `gallery`. Admin skládá Novinka / Horká událost / Stalo se, appka po startu `GET /scorecard/notices`. EAS iOS **1.0.0 (21)** + Android 16 ve frontě. Pravý Expo push až později.
 - [x] **Kampaň: výběr hráčů v pop-upu** — 2026-10-18. Ve skladbě zprávy je **Vybrat hráče** (dialog se zaškrtávátky, hledáním, všichni/zobrazení) a **Vybrat všechny**. Doručení pořád jen e-mail + `notices_opt_in`.
-- [x] **Kampaň: pop-up kdo to je** — 2026-10-18 lokálně. Klik na startovní lístek otevře seznam jmen (první návštěva, hra, vs par, e-mail). Z něj karta hráče nebo **Vzít do výběru kampaně**. Na prod ještě `7eb23e6`.
-- [x] **Tee sheet / hodiny / mřížka: pop-up hráčů** — 2026-10-18 lokálně. Klik na den, hodinu nebo buňku Den×hodina otevře seznam kdo tam hraje (kola v slotu, hra, poslední návštěva). Na prod ještě `7eb23e6`.
-- [x] **TV ticker: rychlost v adminu** — 2026-10-18 lokálně. `/admin` Reklamy má posuvník 8–120 s (default 36). Ukládá `ticker_seconds` do `tv_data_settings` (migrace `0011`). TV si to vezme z `GET /tv/board` do 10 s. Na prod ještě `7eb23e6`.
-- [x] **Historie odeslaných kampaní** — 2026-10-18 lokálně. Ve Skladbě zprávy je seznam odeslaných (`GET /admin/notices`): druh, čas, titulek, odesláno/přečteno. Klik otevře pop-up s textem a příjemci, **Použít znovu** doplní skladbu. Na prod ještě `7eb23e6`.
-- [x] **TV pódium bez mazání kol** — 2026-10-18 lokálně. Migrace `0012` `tv_data_settings.podium_since`. Cron/`Vyčistit pódium` jen posune cutoff; kola se nemažou (`lastPurgeDeleted: 0`, 3 kola zůstala). `/tv` medaile z `podiumLeaderboard`; 4–10 a Právě dohráli z celého období. `/admin/galerie`: fotka ze hry ke stažení `ksirovka_hra_2026-10-18_martinpolak.jpg` (401 bez cookie). Na prod ještě `7eb23e6`.
+- [x] **Kampaň: pop-up kdo to je** — 2026-10-18 na prod `1f1d713`. Klik na startovní lístek otevře seznam jmen (první návštěva, hra, vs par, e-mail). Z něj karta hráče nebo **Vzít do výběru kampaně**.
+- [x] **Tee sheet / hodiny / mřížka: pop-up hráčů** — 2026-10-18 na prod `1f1d713`. Klik na den, hodinu nebo buňku Den×hodina otevře seznam kdo tam hraje (kola v slotu, hra, poslední návštěva).
+- [x] **TV ticker: rychlost v adminu** — 2026-10-18 na prod `1f1d713`. `/admin` Reklamy má posuvník 8–120 s (default 36). Ukládá `ticker_seconds` do `tv_data_settings` (migrace `0011`). TV si to vezme z `GET /tv/board` do 10 s.
+- [x] **Historie odeslaných kampaní** — 2026-10-18 na prod `1f1d713`. Ve Skladbě zprávy je seznam odeslaných (`GET /admin/notices`): druh, čas, titulek, odesláno/přečteno. Klik otevře pop-up s textem a příjemci, **Použít znovu** doplní skladbu.
+- [x] **TV pódium bez mazání kol** — 2026-10-18 na prod `1f1d713`. Migrace `0012` `tv_data_settings.podium_since`. Cron/`Vyčistit pódium` jen posune cutoff; kola se nemažou. `/tv` medaile z `podiumLeaderboard`; 4–10 a Právě dohráli z celého období. `/admin/galerie` stáhne fotky (401 bez cookie). Noční pódium na prod vypnuté.
 - [x] **Dětské skinny (vlastní vzhled)** — 2026-10-18 v app2, EAS 21. Můj profil (`/login`) má mřížku: Kšírovka (default), Liga, Modrý svět, Pouštní palác, Okruh, Ledová říše. Žádné licencované značky. `themeId` v persist store vedle `locale`. Chrom (Screen, Card, Button, scorecard) bere pack; share karta, TV, splash a logo zůstávají Kšírovka.
 - [x] **Gramatika foursome** — 2026-10-18 v EAS 21. „Čtveřice sdílí jednu míčku“ pryč. Fotbalgolf: **jeden míč** / vlastní míč. Minigolf a adventure: **jeden míček** / vlastní míček. Stejný rozdíl v sk/en/de/pl/vi.
 - [ ] Import obsahu do produkční DB (`import:content`) až poběží API.
@@ -272,6 +272,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Commit + deploy tip/par/TV zarovnání + EAS 19** — 2026-10-18. API `00654e3`. Mobil `6c1916a` + bump `5183b17`.
 - [x] **TV pódium + 6 fotek** — 2026-10-18. `0bffac4` odkaz Výsledky v hlavičce (`/health` sedí). Záloha `ksirovka-20261018-113955.sql.gz`. Rollback = `bd5b67d`.
 - [x] **Commit + deploy admin Strategie + 0010** — 2026-10-18. API `7eb23e6` na prod (`/health` A i IPv6 sedí). Záloha `ksirovka-20261018-141517.sql.gz`. Rollback = `0bffac4`. Mobil `62f777b` + bump `18705f4`. EAS iOS **1.0.0 (21)** `cabd99b5` + Android AAB 16 `d392ea43`. Telefony uvidí inbox až po TestFlight/Play.
+- [x] **Commit + deploy pódium/galerie/ticker/kampaně** — 2026-10-18. API `1f1d713` na prod (`/health` A i IPv6 sedí). CI https://github.com/martinpolakcz/ksirovka/actions/runs/39139927510. Záloha `ksirovka-20261018-152037.sql.gz`. Rollback = `7eb23e6`. Staging se nenasazoval (pořád není živý); migrace 0011/0012 jen přidávají sloupce. Mobil/EAS beze změny.
 
 ---
 
