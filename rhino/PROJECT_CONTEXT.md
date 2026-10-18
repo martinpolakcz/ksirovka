@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Nasazuji Strategie + 0010 + appku (skiny, inbox)  
-> **Poslední aktualizace:** 2026-10-18 16:20
+> **Stav:** Produkční API+web na VPS běží (`7eb23e6`)  
+> **Poslední aktualizace:** 2026-10-18 16:17
 
 ---
 
@@ -66,8 +66,8 @@ Expo účet: `martinpolak` (`martin.polak.cz@gmail.com`). EAS projekt: `@martinp
   - `ksirovka.martinpolak.cz` **A = 62.83.17.63**. `/health` přes IPv4 = `e79e54e`.
   - **AAAA = `2a0a:4cc0:61:4215:c477:34ff:feb2:9147`**. Z VPS `/health` přes `-6` = `e79e54e`. Z notebooku IPv6 timeout (lokální síť, ne VPS).
 - **SSH:** `$HOME/.ssh/netcup_ksirovka_ed25519` → `root@62.83.17.63` (Debian 13). Docker nainstalován `server-setup.sh`.
-- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `0bffac4`, CI success, image `ghcr.io/martinpolakcz/ksirovka:0bffac4`.
-- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` = `0bffac4` (ověřeno 2026-10-18 13:41). Na `/tv` je vpravo nahoře malé **Výsledky** → `/vysledky`. Záloha před deployem `ksirovka-20261018-113955.sql.gz` (18 tabulek). Migrace `0007`+`0008`. Rollback = `bd5b67d`. Jamka 2 má tip, plánek je `null` — nahrát znovu v `/admin/jamky`.
+- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `7eb23e6`, CI success, image `ghcr.io/martinpolakcz/ksirovka:7eb23e6`.
+- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` A i z VPS IPv6 = `7eb23e6` (ověřeno 2026-10-18 16:17). `/admin/strategie` na prod (login + `GET /admin/marketing` 200, 21 hráčů). Migrace `0009`+`0010` na `score_profiles` (platform, locale, birth_year, photo, notices_opt_in) a tabulky `score_notices` / `score_notice_targets`. Záloha před deployem `ksirovka-20261018-141517.sql.gz` (18 tabulek). Rollback = `0bffac4`. Jamka 2 má tip, plánek je `null` — nahrát znovu v `/admin/jamky`.
 - **Lokálně (2026-09-25):** Colima znovu nastartovaná. Postgres volume byl plný (panic `No space left`); po `docker image prune -af` (~4.8 GB) je healthy, migrace `0004` aplikovaná, API na `:3801`. Expo Go Metro LAN `exp://192.168.1.37:8081`.
 
 Jediné místo s IP a doménami: `deploy/target.env`.
@@ -143,10 +143,10 @@ curl -fsS https://ksirovka.martinpolak.cz/health
 Postgres **nerecreatuj** kvůli env — `POSTGRES_PASSWORD` platí jen při prvním startu volume. Do API se dostane jen to, co je ve `deploy/docker-compose.yml` u `environment:` (`PG_PASSWORD`, `ADMIN_*`, `CORS_ORIGIN`, `LEGACY_SITE_URL`).
 
 #### iOS Scorecard (EAS → App Store Connect)
-Aktuální IPA v TestFlight: **1.0.0 (16)**. EAS **1.0.0 (17)** ještě ve frontě; **1.0.0 (19)** `75ea33d1` + auto-submit `87382870` (tip na plánku, par z API). EAS image `sdk-54`. Rollback iOS = **1.0.0 (16)** `d8ab3c01`.
+Aktuální IPA v TestFlight: **1.0.0 (16)**. EAS **1.0.0 (21)** ve frontě `cabd99b5` + auto-submit `8618c259` (selfie, inbox, skinny, gramatika foursome). Hotové **1.0.0 (19)** `75ea33d1`. EAS image `sdk-54`. Rollback iOS = **1.0.0 (16)** `d8ab3c01`.
 
 #### Android Scorecard (EAS → Google Play)
-Účet schválený 2026-09-23. AAB **1.0.0 (14)** `e5e5ea9f` se staví (2026-10-18). Předchozí **1.0.0 (12)** ve frontě. `eas submit` pořád bez Service Account JSON. V Console zůstává AAB **1.0.0 (7)** `8ef4aa05`. Playbook: `rhino/android-play-store.md`.
+Účet schválený 2026-09-23. AAB **1.0.0 (16)** `d392ea43` + preview APK `60cfbda0` ve frontě (2026-10-18). Hotové **1.0.0 (14)** `e5e5ea9f`. `eas submit` pořád bez Service Account JSON. V Console zůstává AAB **1.0.0 (7)** `8ef4aa05`. Playbook: `rhino/android-play-store.md`.
 
 ```bash
 cd /Users/martin.polak/Projects/ksirovka-app2/ksirovka-app
@@ -234,11 +234,11 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Share karta: copy + název souboru** — 2026-10-18. Věta „Nakopal jsem to sem…“ z karty pryč. Soubor `ksirovka_YYYY-MM-DD_jmeno.jpg` (Praha, bez diakritiky).
 - [x] **Share karta na TV** — 2026-10-18. Overlay 11 s. Pódium má původní jméno/skóre/kola a fotku hráče (ne celou brand kartu místo #1). Právě dohráli = 6 minikaret s fotkou, nejstarší vlevo, nový zprava. `shareCardUrl` je relativní `/api/v1/…` (lokální proxy i prod stejný origin).
 - [ ] **Liquid glass na chromu scorecard** — pin `LiveStandings` + akcí přes `expo-blur`, ať mřížka jamek jede pod lištou. Audit: `rhino/ui-liquid-glass.md`.
-- [x] **Admin Strategie** — 2026-10-18 lokálně. `/admin/strategie`: kdy hrají, mix her, vs par, kalendář, roster. Klik na den otevře pop-up (kdo, hra, vs par, poprvé, čas). Kampaně k oslovení, CSV/e-maily. API `GET /admin/marketing`. iPhone/Android a locale až z nové appky.
-- [x] **Hráč, fotky, kampaně v appce** — 2026-10-18 lokálně. Pop-up hráče (tabulka + den) s historií kol. Migrace `0010`: `birth_year`, `photo` bytea, `notices_opt_in`, tabulky `score_notices` + `score_notice_targets`. Login v app2 má selfie, rok narození a souhlas. TV/`/vysledky` berou profilovou fotku (fallback iniciála); share karta = fotka ze hry do galerie a TV slotu `gallery`. Admin skládá Novinka / Horká událost / Stalo se, appka po startu `GET /scorecard/notices`. Pravý Expo push a EAS až půjde do telefonu. Na prod ještě nenasazeno.
+- [x] **Admin Strategie** — 2026-10-18 na prod `7eb23e6`. `/admin/strategie`: kdy hrají, mix her, vs par, kalendář, roster. Klik na den otevře pop-up (kdo, hra, vs par, poprvé, čas). Kampaně k oslovení, CSV/e-maily. API `GET /admin/marketing` (21 hráčů). iPhone/Android a locale až z appky 21.
+- [x] **Hráč, fotky, kampaně v appce** — 2026-10-18 na prod `7eb23e6`. Pop-up hráče (tabulka + den) s historií kol. Migrace `0010`: `birth_year`, `photo` bytea, `notices_opt_in`, tabulky `score_notices` + `score_notice_targets`. Login v app2 má selfie, rok narození a souhlas. TV/`/vysledky` berou profilovou fotku (fallback iniciála); share karta = fotka ze hry do galerie a TV slotu `gallery`. Admin skládá Novinka / Horká událost / Stalo se, appka po startu `GET /scorecard/notices`. EAS iOS **1.0.0 (21)** + Android 16 ve frontě. Pravý Expo push až později.
 - [x] **Kampaň: výběr hráčů v pop-upu** — 2026-10-18. Ve skladbě zprávy je **Vybrat hráče** (dialog se zaškrtávátky, hledáním, všichni/zobrazení) a **Vybrat všechny**. Doručení pořád jen e-mail + `notices_opt_in`.
-- [x] **Dětské skinny (vlastní vzhled)** — 2026-10-18 v app2. Můj profil (`/login`) má mřížku: Kšírovka (default), Liga, Modrý svět, Pouštní palác, Okruh, Ledová říše. Žádné licencované značky. `themeId` v persist store vedle `locale`. Chrom (Screen, Card, Button, scorecard) bere pack; share karta, TV, splash a logo zůstávají Kšírovka. EAS až s releasem.
-- [x] **Gramatika foursome** — 2026-10-18. „Čtveřice sdílí jednu míčku“ pryč. Fotbalgolf: **jeden míč** / vlastní míč. Minigolf a adventure: **jeden míček** / vlastní míček. Stejný rozdíl v sk/en/de/pl/vi.
+- [x] **Dětské skinny (vlastní vzhled)** — 2026-10-18 v app2, EAS 21. Můj profil (`/login`) má mřížku: Kšírovka (default), Liga, Modrý svět, Pouštní palác, Okruh, Ledová říše. Žádné licencované značky. `themeId` v persist store vedle `locale`. Chrom (Screen, Card, Button, scorecard) bere pack; share karta, TV, splash a logo zůstávají Kšírovka.
+- [x] **Gramatika foursome** — 2026-10-18 v EAS 21. „Čtveřice sdílí jednu míčku“ pryč. Fotbalgolf: **jeden míč** / vlastní míč. Minigolf a adventure: **jeden míček** / vlastní míček. Stejný rozdíl v sk/en/de/pl/vi.
 - [ ] Import obsahu do produkční DB (`import:content`) až poběží API.
 - [ ] Staging na VPS (`./scripts/deploy.sh --staging`) s vlastními daty.
 - [ ] Privacy policy stránka.
@@ -266,7 +266,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Commit + deploy share/TV + EAS 17** — 2026-10-18. API `4403a4c` na prod. Mobil `430a737` + bump `3dccd73`.
 - [x] **Commit + deploy tip/par/TV zarovnání + EAS 19** — 2026-10-18. API `00654e3`. Mobil `6c1916a` + bump `5183b17`.
 - [x] **TV pódium + 6 fotek** — 2026-10-18. `0bffac4` odkaz Výsledky v hlavičce (`/health` sedí). Záloha `ksirovka-20261018-113955.sql.gz`. Rollback = `bd5b67d`.
-- [ ] **Commit + deploy admin Strategie + 0010** — lokálně hotové (pop-up hráče, profilová fotka, inbox kampaní, galerie ze hry). Na prod ještě ne. Migrace `0009`+`0010`. Mobil app2 má login/inbox; EAS až s releasem, jinak telefony novinky neuvidí.
+- [x] **Commit + deploy admin Strategie + 0010** — 2026-10-18. API `7eb23e6` na prod (`/health` A i IPv6 sedí). Záloha `ksirovka-20261018-141517.sql.gz`. Rollback = `0bffac4`. Mobil `62f777b` + bump `18705f4`. EAS iOS **1.0.0 (21)** `cabd99b5` + Android AAB 16 `d392ea43`. Telefony uvidí inbox až po TestFlight/Play.
 
 ---
 
