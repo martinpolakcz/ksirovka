@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import type { ScorecardStats } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { GAME_LABELS, kolaLabel, sharePhotoFor } from "./tv-shared";
+import { ShareFace } from "./ShareFace";
 
 const PLACE_META = [
   { place: 2, medal: "🥈", height: "h-auto lg:h-[78%]", order: "order-2 lg:order-1", bg: "bg-white", accent: "text-[#8a8a8a]" },
@@ -40,18 +41,15 @@ export function Podium({ leaderboard, recentRounds, reducedMotion, compact = fal
             <div className="flex items-start justify-between gap-3">
               <p className="text-3xl leading-none lg:text-5xl">{meta.medal}</p>
               {photo ? (
-                <img
+                <ShareFace
                   src={photo}
                   alt={row?.playerName ?? ""}
                   className={cn(
-                    "shrink-0 object-cover object-[center_30%]",
+                    "shrink-0",
                     first
                       ? "size-24 rounded-[1.4rem] ring-2 ring-white/35 lg:size-36 xl:size-44"
                       : "size-16 rounded-2xl ring-1 ring-ink/10 lg:size-24 xl:size-28",
                   )}
-                  onError={(event) => {
-                    event.currentTarget.style.display = "none";
-                  }}
                 />
               ) : null}
             </div>
