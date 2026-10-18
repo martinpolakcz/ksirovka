@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AdminAuthError,
   api,
+  type AdminNotice,
   type MarketingCampaign,
   type MarketingPlayer,
   type MarketingSnapshot,
@@ -65,6 +66,183 @@ function formatWhen(iso: string | null): string {
   });
 }
 
+function formatDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("cs-CZ", {
+    timeZone: "Europe/Prague",
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatDateTime(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("cs-CZ", {
+    timeZone: "Europe/Prague",
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function noticeKindLabel(kind: NoticeKind): string {
+  return NOTICE_KINDS.find((item) => item.id === kind)?.label ?? kind;
+}
+
+function roundsWord(count: number): string {
+  if (count === 1) return "1 kolo";
+  if (count >= 2 && count <= 4) return `${count} kola`;
+  return `${count} kol`;
+}
+
+const CAMPAIGN_GAMES = ["fotbalgolf", "minigolf", "adventure"] as const;
+
+function parseCrossCampaign(id: string): { played: (typeof CAMPAIGN_GAMES)[number]; missing: (typeof CAMPAIGN_GAMES)[number] } | null {
+  if (!id.startsWith("cross-")) return null;
+  const rest = id.slice("cross-".length);
+  const played = CAMPAIGN_GAMES.find((game) => rest.startsWith(`${game}-`));
+  if (!played) return null;
+  const missing = rest.slice(played.length + 1);
+  if (!CAMPAIGN_GAMES.includes(missing as (typeof CAMPAIGN_GAMES)[number])) return null;
+  return { played, missing: missing as (typeof CAMPAIGN_GAMES)[number] };
+}
+
+function campaignPlayerHint(campaignId: string, player: MarketingPlayer): string {
+  const bits: string[] = [];
+  const cross = parseCrossCampaign(campaignId);
+  if (campaignId === "new") {
+    bits.push(`Poprvé ${formatDate(player.firstPlayedAt)}`);
+  } else if (campaignId === "comeback" && player.daysSinceLast != null) {
+    bits.push(`${player.daysSinceLast} dní pryč`);
+  } else if (campaignId === "regulars") {
+    bits.push("Chodí pravidelně");
+  } else if (campaignId === "no-email") {
+    bits.push("Známý jen z kola");
+  } else if (cross) {
+    bits.push(`Hraje ${GAME_LABELS[cross.played]} · chybí ${GAME_LABELS[cross.missing]}`);
+  }
+  bits.push(roundsWord(player.rounds));
+  bits.push(`vs par ${formatVsPar(player.avgVsPar)}`);
+  if (campaignId !== "comeback") {
+    bits.push(player.lastPlayedAt ? `naposledy ${formatDate(player.lastPlayedAt)}` : "bez data");
+  }
+  if (player.favoriteGame && !cross) {
+    bits.push(GAME_LABELS[player.favoriteGame]);
+  }
+  return bits.join(" · ");
+}
+
+const WEEKDAY_WHEN = ["v pondělí", "v úterý", "ve středu", "ve čtvrtek", "v pátek", "v sobotu", "v neděli"] as const;
+
+type SlotFilter = { dow?: number; hour?: number };
+type SlotStat = { rounds: number; lastDate: string; games: string[] };
+type PeopleRosterView = {
+  kicker: string;
+  title: string;
+  pitch: string;
+  extra?: string;
+  people: MarketingPlayer[];
+  hint: (player: MarketingPlayer) => string;
+  subject?: string;
+};
+
+function isoDowFromDateKey(date: string): number {
+  const [year, month, day] = date.split("-").map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day, 12)).getUTCDay();
+  return weekday === 0 ? 7 : weekday;
+}
+
+function collectSlot(data: MarketingSnapshot, filter: SlotFilter): { people: MarketingPlayer[]; stats: Map<string, SlotStat>; rounds: number } {
+  const stats = new Map<string, SlotStat>();
+  let rounds = 0;
+  for (const log of Object.values(data.days)) {
+    const dow = isoDowFromDateKey(log.date);
+    if (filter.dow != null && dow !== filter.dow) continue;
+    for (const round of log.rounds) {
+      if (filter.hour != null && round.hour !== filter.hour) continue;
+      rounds += 1;
+      for (const seat of round.players) {
+        const current = stats.get(seat.name) ?? { rounds: 0, lastDate: log.date, games: [] };
+        current.rounds += 1;
+        if (log.date > current.lastDate) current.lastDate = log.date;
+        if (!current.games.includes(round.label)) current.games.push(round.label);
+        stats.set(seat.name, current);
+      }
+    }
+  }
+  const people = data.players
+    .filter((player) => stats.has(player.nickname))
+    .sort((a, b) => (stats.get(b.nickname)?.rounds ?? 0) - (stats.get(a.nickname)?.rounds ?? 0));
+  return { people, stats, rounds };
+}
+
+function slotTitle(data: MarketingSnapshot, filter: SlotFilter): string {
+  const day = filter.dow != null ? data.weekdays.find((item) => item.dow === filter.dow)?.label : null;
+  const hour = filter.hour != null ? `${String(filter.hour).padStart(2, "0")}:00` : null;
+  if (day && hour) return `${day} ${hour}`;
+  if (day) return day;
+  if (hour) return hour;
+  return "Termín";
+}
+
+function slotPitch(filter: SlotFilter, rounds: number, people: number): string {
+  const when =
+    filter.dow != null && filter.hour != null
+      ? `${WEEKDAY_WHEN[filter.dow - 1]} v ${String(filter.hour).padStart(2, "0")}:00`
+      : filter.dow != null
+        ? WEEKDAY_WHEN[filter.dow - 1]
+        : filter.hour != null
+          ? `v ${String(filter.hour).padStart(2, "0")}:00`
+          : "";
+  return `${roundsWord(rounds)} ${when}. ${people} ${people === 1 ? "hráč" : people < 5 ? "hráči" : "hráčů"} v tomhle okně.`;
+}
+
+function rosterFromSlot(data: MarketingSnapshot, filter: SlotFilter): PeopleRosterView {
+  const slot = collectSlot(data, filter);
+  return {
+    kicker: "Kdo tu hraje",
+    title: slotTitle(data, filter),
+    pitch: slotPitch(filter, slot.rounds, slot.people.length),
+    extra: [...new Set(slot.people.flatMap((player) => player.gamesPlayed))].map((game) => GAME_LABELS[game]).join(" · "),
+    people: slot.people,
+    hint: (player) => {
+      const stat = slot.stats.get(player.nickname);
+      if (!stat) return campaignPlayerHint("slot", player);
+      return `${roundsWord(stat.rounds)} tady · naposledy ${formatDate(`${stat.lastDate}T12:00:00`)} · ${stat.games.join(", ")}`;
+    },
+  };
+}
+
+function rosterFromCampaign(data: MarketingSnapshot, campaign: MarketingCampaign): PeopleRosterView {
+  const names = new Set(campaign.nicknames);
+  return {
+    kicker: "Skupina k oslovení",
+    title: campaign.title,
+    pitch: campaign.pitch,
+    extra: campaign.subject ? `předmět: ${campaign.subject}` : undefined,
+    people: sortCampaignPeople(
+      campaign.id,
+      data.players.filter((player) => names.has(player.nickname)),
+    ),
+    hint: (player) => campaignPlayerHint(campaign.id, player),
+    subject: campaign.subject || undefined,
+  };
+}
+
+function sortCampaignPeople(campaignId: string, people: MarketingPlayer[]): MarketingPlayer[] {
+  const copy = [...people];
+  if (campaignId === "new") {
+    return copy.sort((a, b) => (b.firstPlayedAt ?? "").localeCompare(a.firstPlayedAt ?? ""));
+  }
+  if (campaignId === "comeback") {
+    return copy.sort((a, b) => (b.daysSinceLast ?? 0) - (a.daysSinceLast ?? 0));
+  }
+  return copy.sort((a, b) => (b.lastPlayedAt ?? "").localeCompare(a.lastPlayedAt ?? ""));
+}
+
 function heatTone(value: number, max: number): string {
   if (value <= 0 || max <= 0) return "bg-mist text-ink/30";
   const ratio = value / max;
@@ -76,27 +254,47 @@ function heatTone(value: number, max: number): string {
 
 function BarList({
   items,
+  onSelect,
 }: {
   items: Array<{ key: string; label: string; value: number; hint?: string }>;
+  onSelect?: (key: string) => void;
 }) {
   const max = Math.max(1, ...items.map((item) => item.value));
   return (
     <ul className="space-y-3">
-      {items.map((item) => (
-        <li key={item.key} className="grid grid-cols-[4.5rem_minmax(0,1fr)_2.4rem] items-center gap-3">
-          <span className="text-sm font-semibold tracking-wide text-ink/70">{item.label}</span>
-          <div className="h-3 overflow-hidden rounded-full bg-mist">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-teal to-orange"
-              style={{ width: `${Math.max(item.value > 0 ? 8 : 0, (item.value / max) * 100)}%` }}
-            />
-          </div>
-          <span className="text-right font-display text-sm tabular-nums">
-            {item.value}
-            {item.hint ? <span className="block text-[10px] font-sans text-ink/40">{item.hint}</span> : null}
-          </span>
-        </li>
-      ))}
+      {items.map((item) => {
+        const inner = (
+          <>
+            <span className="text-sm font-semibold tracking-wide text-ink/70">{item.label}</span>
+            <div className="h-3 overflow-hidden rounded-full bg-mist">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-teal to-orange"
+                style={{ width: `${Math.max(item.value > 0 ? 8 : 0, (item.value / max) * 100)}%` }}
+              />
+            </div>
+            <span className="text-right font-display text-sm tabular-nums">
+              {item.value}
+              {item.hint ? <span className="block text-[10px] font-sans text-ink/40">{item.hint}</span> : null}
+            </span>
+          </>
+        );
+        const clickable = Boolean(onSelect) && item.value > 0;
+        return (
+          <li key={item.key}>
+            {clickable ? (
+              <button
+                type="button"
+                onClick={() => onSelect?.(item.key)}
+                className="grid w-full grid-cols-[4.5rem_minmax(0,1fr)_2.4rem] items-center gap-3 rounded-xl px-1 py-0.5 text-left hover:bg-mist"
+              >
+                {inner}
+              </button>
+            ) : (
+              <div className="grid grid-cols-[4.5rem_minmax(0,1fr)_2.4rem] items-center gap-3">{inner}</div>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -174,6 +372,7 @@ export function AdminMarketingPage() {
   const [notice, setNotice] = useState("");
   const [openDate, setOpenDate] = useState<string | null>(null);
   const [openNickname, setOpenNickname] = useState<string | null>(null);
+  const [roster, setRoster] = useState<PeopleRosterView | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [ageFrom, setAgeFrom] = useState("");
   const [ageTo, setAgeTo] = useState("");
@@ -184,9 +383,9 @@ export function AdminMarketingPage() {
     queryKey: ["admin-marketing"],
     queryFn: () => api.getAdminMarketing(),
   });
-  const photosQuery = useQuery({
-    queryKey: ["admin-game-photos"],
-    queryFn: () => api.getAdminGamePhotos(),
+  const noticesQuery = useQuery({
+    queryKey: ["admin-notices"],
+    queryFn: () => api.getAdminNotices(),
   });
   const sendNotice = useMutation({
     mutationFn: api.sendAdminNotice,
@@ -194,21 +393,15 @@ export function AdminMarketingPage() {
       setNotice(`Do appky šlo ${result.sent} zpráv${result.skipped ? `, ${result.skipped} bez souhlasu přeskočeno` : ""}.`);
       setNoticeTitle("");
       setNoticeMessage("");
+      void queryClient.invalidateQueries({ queryKey: ["admin-notices"] });
     },
     onError: (error) => setNotice(error instanceof Error ? error.message : "Kampaň se neodeslala."),
   });
-  const sendPhoto = useMutation({
-    mutationFn: api.sendGamePhotoToTv,
-    onSuccess: (_, roundId) => {
-      setNotice("Fotka ze hry je na TV v galerii.");
-      void queryClient.invalidateQueries({ queryKey: ["admin-game-photos"] });
-      void roundId;
-    },
-    onError: (error) => setNotice(error instanceof Error ? error.message : "Fotku se nepodařilo dát na TV."),
-  });
-
   if (marketingQuery.error) {
     redirectIfUnauthorized(marketingQuery.error);
+  }
+  if (noticesQuery.error) {
+    redirectIfUnauthorized(noticesQuery.error);
   }
 
   const data = marketingQuery.data;
@@ -306,6 +499,10 @@ export function AdminMarketingPage() {
       </header>
 
       <Panel kicker="Startovní listina kampaní" title="Koho oslovit">
+        <p className="mb-5 text-sm text-ink/55">
+          Klikni na skupinu — uvidíš kdo to je, co hraje a kdy tu byl naposledy. Z pop-upu jde rovnou do karty hráče
+          nebo do výběru kampaně.
+        </p>
         {data.campaigns.length === 0 ? (
           <p className="text-sm text-ink/50">Až přijdou kola s e-mailem, tady naskočí konkrétní skupiny k oslovení.</p>
         ) : (
@@ -315,7 +512,10 @@ export function AdminMarketingPage() {
                 key={item.id}
                 campaign={item}
                 active={campaignId === item.id}
-                onSelect={() => setCampaignId(item.id === campaignId ? "all" : item.id)}
+                onSelect={() => {
+                  setCampaignId(item.id);
+                  setRoster(rosterFromCampaign(data, item));
+                }}
               />
             ))}
           </div>
@@ -348,6 +548,7 @@ export function AdminMarketingPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel kicker="01 · Tee sheet" title="Kdy chodí hrát">
+          <p className="mb-4 text-sm text-ink/55">Klikni na den — uvidíš kdo v ten den chodí.</p>
           <BarList
             items={data.weekdays.map((day) => ({
               key: String(day.dow),
@@ -355,21 +556,25 @@ export function AdminMarketingPage() {
               value: day.rounds,
               hint: day.players ? `${day.players} hráčů` : undefined,
             }))}
+            onSelect={(key) => setRoster(rosterFromSlot(data, { dow: Number(key) }))}
           />
         </Panel>
         <Panel kicker="02 · Odpal" title="V kterou hodinu">
+          <p className="mb-4 text-sm text-ink/55">Klikni na hodinu — uvidíš kdo v ten čas startuje.</p>
           <BarList
             items={data.hours.map((hour) => ({
-              key: hour.label,
+              key: String(hour.hour),
               label: hour.label,
               value: hour.rounds,
             }))}
+            onSelect={(key) => setRoster(rosterFromSlot(data, { hour: Number(key) }))}
           />
         </Panel>
       </div>
 
       <Panel kicker="03 · Mřížka" title="Den × hodina">
-        <HourGrid data={data} />
+        <p className="mb-4 text-sm text-ink/55">Klikni na políčko — konkrétní den a hodina, konkrétní lidi.</p>
+        <HourGrid data={data} onSelect={(dow, hour) => setRoster(rosterFromSlot(data, { dow, hour }))} />
       </Panel>
 
       <Panel kicker="04 · Kalendář hřiště" title="Kdy se objevili na jamkách">
@@ -403,6 +608,8 @@ export function AdminMarketingPage() {
         ageFrom={ageFrom}
         ageTo={ageTo}
         sending={sendNotice.isPending}
+        history={noticesQuery.data?.items ?? []}
+        historyLoading={noticesQuery.isLoading}
         onKind={setNoticeKind}
         onTitle={setNoticeTitle}
         onMessage={setNoticeMessage}
@@ -411,6 +618,13 @@ export function AdminMarketingPage() {
         onToggle={togglePicked}
         onSelectAll={(nicknames) => setPicked(new Set(nicknames))}
         onClear={() => setPicked(new Set())}
+        onReuse={(item) => {
+          setNoticeKind(item.kind);
+          setNoticeTitle(item.title);
+          setNoticeMessage(item.message);
+          setPicked(new Set(item.recipients.map((person) => person.nickname)));
+          setNotice(`Z kampaně „${item.title}“ je ve výběru ${item.recipients.length} lidí. Uprav a pošli znovu.`);
+        }}
         onSend={() => {
           if (!noticeTitle.trim() || !noticeMessage.trim()) {
             setNotice("Doplň titulek i text kampaně.");
@@ -427,13 +641,6 @@ export function AdminMarketingPage() {
             nicknames: inboxTargets.map((player) => player.nickname),
           });
         }}
-      />
-
-      <GamePhotoGallery
-        items={photosQuery.data?.items ?? []}
-        loading={photosQuery.isLoading}
-        sendingId={sendPhoto.isPending ? sendPhoto.variables : null}
-        onSend={(roundId) => sendPhoto.mutate(roundId)}
       />
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -486,6 +693,15 @@ export function AdminMarketingPage() {
             {selectedCampaign
               ? `${selectedCampaign.title}: ${players.length} lidí, ${emails.length} e-mailů.`
               : "Klikni na přezdívku — uvidíš historii. Zaškrtni řádky do kampaně v appce."}
+            {selectedCampaign ? (
+              <button
+                type="button"
+                className="ml-2 text-teal hover:underline"
+                onClick={() => setCampaignId("all")}
+              >
+                Zrušit filtr
+              </button>
+            ) : null}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -600,6 +816,18 @@ export function AdminMarketingPage() {
           </table>
         </div>
       </Panel>
+      <PeopleRosterDialog
+        roster={roster}
+        picked={picked}
+        onClose={() => setRoster(null)}
+        onSelectPlayer={setOpenNickname}
+        onToggle={togglePicked}
+        onTakeAll={(nicknames) => {
+          setPicked(new Set(nicknames));
+          if (roster?.subject) setNoticeTitle(roster.subject);
+          setNotice(`Ve výběru je ${nicknames.length} lidí ze skupiny ${roster?.title ?? "kampaně"}.`);
+        }}
+      />
       <PlayerDialog
         player={openPlayer}
         onClose={() => setOpenNickname(null)}
@@ -635,7 +863,143 @@ function CampaignTicket({
         </p>
       </div>
       <p className="mt-2 text-sm leading-6 text-ink/65">{campaign.pitch}</p>
+      <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-teal">Kdo to je</p>
     </button>
+  );
+}
+
+function PeopleRosterDialog({
+  roster,
+  picked,
+  onClose,
+  onSelectPlayer,
+  onToggle,
+  onTakeAll,
+}: {
+  roster: PeopleRosterView | null;
+  picked: Set<string>;
+  onClose: () => void;
+  onSelectPlayer: (nickname: string) => void;
+  onToggle: (nickname: string) => void;
+  onTakeAll: (nicknames: string[]) => void;
+}) {
+  const people = roster?.people ?? [];
+  const emails = uniqueEmails(people);
+  const inboxable = people.filter((player) => player.email && player.noticesOptIn).length;
+  const newest = people.reduce<string | null>((best, player) => {
+    const at = player.lastPlayedAt;
+    if (!at) return best;
+    if (!best || at > best) return at;
+    return best;
+  }, null);
+
+  return (
+    <Dialog.Root open={Boolean(roster)} onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[60] bg-forest-950/70 backdrop-blur-sm" />
+        <Dialog.Content className="fixed inset-x-4 top-[8vh] z-[70] mx-auto max-h-[84vh] max-w-2xl overflow-y-auto rounded-[1.75rem] bg-white p-6 shadow-[0_24px_80px_rgba(13,61,60,0.28)] outline-none sm:p-8">
+          {roster ? (
+            <>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange">{roster.kicker}</p>
+                  <Dialog.Title className="mt-1 font-display text-3xl font-semibold tracking-tight">
+                    {roster.title}
+                  </Dialog.Title>
+                  <Dialog.Description className="mt-2 text-sm leading-6 text-ink/65">{roster.pitch}</Dialog.Description>
+                </div>
+                <Dialog.Close className="rounded-full px-3 py-1.5 text-sm text-ink/50 hover:text-ink">Zavřít</Dialog.Close>
+              </div>
+
+              <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <MiniStat label="Lidi" value={String(people.length)} />
+                <MiniStat label="E-maily" value={String(emails.length)} />
+                <MiniStat label="Novinky v appce" value={String(inboxable)} />
+                <MiniStat label="Poslední u nich" value={newest ? formatDate(newest) : "—"} />
+              </dl>
+              {roster.extra ? <p className="mt-4 text-sm text-ink/60">{roster.extra}</p> : null}
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="rounded-full px-4 py-2 text-sm text-teal ring-1 ring-teal/40 hover:bg-teal hover:text-white"
+                  onClick={() => onTakeAll(people.map((player) => player.nickname))}
+                >
+                  Vzít do výběru kampaně
+                </button>
+                {emails.length > 0 ? (
+                  <button
+                    type="button"
+                    className="rounded-full px-4 py-2 text-sm text-ink/70 ring-1 ring-ink/15 hover:text-orange"
+                    onClick={() => void navigator.clipboard.writeText(emails.join(", "))}
+                  >
+                    Kopírovat e-maily
+                  </button>
+                ) : null}
+              </div>
+
+              {people.length === 0 ? (
+                <p className="mt-6 text-sm text-ink/50">V tomhle okně teď nikdo není.</p>
+              ) : (
+                <ul className="mt-6 space-y-3">
+                  {people.map((player) => {
+                    const canInbox = Boolean(player.email && player.noticesOptIn);
+                    return (
+                      <li key={player.nickname} className="flex items-start gap-3 rounded-2xl bg-mist p-3">
+                        <input
+                          type="checkbox"
+                          className="mt-4"
+                          checked={picked.has(player.nickname)}
+                          onChange={() => onToggle(player.nickname)}
+                          aria-label={`Vybrat ${player.nickname}`}
+                        />
+                        {player.photoUrl ? (
+                          <img
+                            src={player.photoUrl}
+                            alt=""
+                            className="mt-1 size-11 rounded-full object-cover ring-2 ring-teal/20"
+                          />
+                        ) : (
+                          <div className="mt-1 flex size-11 items-center justify-center rounded-full bg-forest-100 font-display text-lg text-teal">
+                            {player.nickname.slice(0, 1)}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <button
+                            type="button"
+                            className="text-left"
+                            onClick={() => onSelectPlayer(player.nickname)}
+                          >
+                            <span className="font-semibold text-teal hover:underline">{player.nickname}</span>
+                            {player.name && player.name !== player.nickname ? (
+                              <span className="text-ink/55"> · {player.name}</span>
+                            ) : null}
+                            {player.age != null ? (
+                              <span className="text-ink/45"> · {player.age} let</span>
+                            ) : null}
+                          </button>
+                          <p className="mt-1 text-sm leading-5 text-ink/65">{roster.hint(player)}</p>
+                          <p className="mt-1 truncate text-xs text-ink/50">
+                            {player.email ? (
+                              <a className="text-teal hover:underline" href={`mailto:${player.email}`}>
+                                {player.email}
+                              </a>
+                            ) : (
+                              "Bez e-mailu"
+                            )}
+                            {canInbox ? " · novinky bere" : " · kampaň do appky nedorazí"}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </>
+          ) : null}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
@@ -649,7 +1013,13 @@ function StatChip({ label, value, hint }: { label: string; value: string; hint: 
   );
 }
 
-function HourGrid({ data }: { data: MarketingSnapshot }) {
+function HourGrid({
+  data,
+  onSelect,
+}: {
+  data: MarketingSnapshot;
+  onSelect: (dow: number, hour: number) => void;
+}) {
   const max = Math.max(1, ...data.hourHeatmap.map((cell) => cell.rounds));
   return (
     <div className="overflow-x-auto">
@@ -671,17 +1041,26 @@ function HourGrid({ data }: { data: MarketingSnapshot }) {
               {data.hours.map((hour) => {
                 const cell = data.hourHeatmap.find((item) => item.dow === day.dow && item.hour === hour.hour);
                 const rounds = cell?.rounds ?? 0;
+                const className = cn(
+                  "flex h-8 w-full items-center justify-center rounded-md tabular-nums",
+                  heatTone(rounds, max),
+                  rounds > 0 && "cursor-pointer hover:ring-2 hover:ring-orange/70",
+                );
                 return (
                   <td key={`${day.dow}-${hour.hour}`}>
-                    <div
-                      title={`${day.label} ${hour.label}: ${rounds} kol`}
-                      className={cn(
-                        "flex h-8 items-center justify-center rounded-md tabular-nums",
-                        heatTone(rounds, max),
-                      )}
-                    >
-                      {rounds || ""}
-                    </div>
+                    {rounds > 0 ? (
+                      <button
+                        type="button"
+                        title={`${day.label} ${hour.label}: ${rounds} kol`}
+                        aria-label={`${day.label} ${hour.label}: ${rounds} kol, kdo hrál`}
+                        onClick={() => onSelect(day.dow, hour.hour)}
+                        className={className}
+                      >
+                        {rounds}
+                      </button>
+                    ) : (
+                      <div title={`${day.label} ${hour.label}: 0 kol`} className={className} />
+                    )}
                   </td>
                 );
               })}
@@ -1060,6 +1439,8 @@ function CampaignComposer({
   ageFrom,
   ageTo,
   sending,
+  history,
+  historyLoading,
   onKind,
   onTitle,
   onMessage,
@@ -1068,6 +1449,7 @@ function CampaignComposer({
   onToggle,
   onSelectAll,
   onClear,
+  onReuse,
   onSend,
 }: {
   kind: NoticeKind;
@@ -1080,6 +1462,8 @@ function CampaignComposer({
   ageFrom: string;
   ageTo: string;
   sending: boolean;
+  history: AdminNotice[];
+  historyLoading: boolean;
   onKind: (kind: NoticeKind) => void;
   onTitle: (value: string) => void;
   onMessage: (value: string) => void;
@@ -1088,9 +1472,12 @@ function CampaignComposer({
   onToggle: (nickname: string) => void;
   onSelectAll: (nicknames: string[]) => void;
   onClear: () => void;
+  onReuse: (item: AdminNotice) => void;
   onSend: () => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [openHistoryId, setOpenHistoryId] = useState<number | null>(null);
+  const openHistory = history.find((item) => item.id === openHistoryId) ?? null;
 
   return (
     <Panel kicker="Kampaň do appky" title="Skladba zprávy">
@@ -1190,6 +1577,41 @@ function CampaignComposer({
           Vyčistit výběr
         </button>
       </div>
+      <div className="mt-8 border-t border-ink/10 pt-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-orange">Odeslané kampaně</p>
+        <h3 className="mt-1 font-display text-2xl">Historie</h3>
+        {historyLoading ? (
+          <p className="mt-3 text-sm text-ink/50">Načítám odeslané zprávy…</p>
+        ) : history.length === 0 ? (
+          <p className="mt-3 text-sm text-ink/50">
+            Zatím tu nic není. První kampaň se objeví hned po odeslání do appky.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-2">
+            {history.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => setOpenHistoryId(item.id)}
+                  className="w-full rounded-[1.25rem] bg-mist/70 px-4 py-3 text-left hover:bg-white hover:ring-1 hover:ring-orange/30"
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-teal">
+                      {noticeKindLabel(item.kind)} · {formatDateTime(item.createdAt)}
+                    </p>
+                    <p className="text-xs tabular-nums text-ink/45">
+                      {item.sent} {item.sent === 1 ? "hráč" : item.sent >= 2 && item.sent <= 4 ? "hráči" : "hráčů"} ·
+                      přečteno {item.read}
+                    </p>
+                  </div>
+                  <p className="mt-1 font-medium">{item.title}</p>
+                  <p className="mt-0.5 line-clamp-2 text-sm text-ink/50">{item.message}</p>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       <PlayerPickerDialog
         open={pickerOpen}
         players={players}
@@ -1199,7 +1621,78 @@ function CampaignComposer({
         onSelectAll={onSelectAll}
         onClear={onClear}
       />
+      <CampaignHistoryDialog
+        item={openHistory}
+        onClose={() => setOpenHistoryId(null)}
+        onReuse={(item) => {
+          onReuse(item);
+          setOpenHistoryId(null);
+        }}
+      />
     </Panel>
+  );
+}
+
+function CampaignHistoryDialog({
+  item,
+  onClose,
+  onReuse,
+}: {
+  item: AdminNotice | null;
+  onClose: () => void;
+  onReuse: (item: AdminNotice) => void;
+}) {
+  return (
+    <Dialog.Root open={Boolean(item)} onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[60] bg-forest-950/70 backdrop-blur-sm" />
+        <Dialog.Content className="fixed inset-x-4 top-[8vh] z-[70] mx-auto max-h-[84vh] max-w-2xl overflow-y-auto rounded-[1.75rem] bg-white p-6 shadow-[0_24px_80px_rgba(13,61,60,0.28)] outline-none sm:p-8">
+          {item ? (
+            <>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange">
+                    {noticeKindLabel(item.kind)} · {formatDateTime(item.createdAt)}
+                  </p>
+                  <Dialog.Title className="mt-1 font-display text-3xl font-semibold tracking-tight">
+                    {item.title}
+                  </Dialog.Title>
+                  <Dialog.Description className="mt-2 text-sm leading-6 text-ink/65">{item.message}</Dialog.Description>
+                </div>
+                <Dialog.Close className="rounded-full px-3 py-1.5 text-sm text-ink/50 hover:text-ink">Zavřít</Dialog.Close>
+              </div>
+              <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <MiniStat label="Odesláno" value={String(item.sent)} />
+                <MiniStat label="Přečteno" value={String(item.read)} />
+                <MiniStat label="Čeká v inboxu" value={String(Math.max(0, item.sent - item.read))} />
+              </dl>
+              <div className="mt-4">
+                <button
+                  type="button"
+                  className="rounded-full px-4 py-2 text-sm text-teal ring-1 ring-teal/40 hover:bg-teal hover:text-white"
+                  onClick={() => onReuse(item)}
+                >
+                  Použít znovu
+                </button>
+              </div>
+              <ul className="mt-5 divide-y divide-ink/10">
+                {item.recipients.map((person) => (
+                  <li key={person.nickname} className="flex items-center justify-between gap-3 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{person.nickname}</p>
+                      <p className="truncate text-sm text-ink/45">{person.email || person.name || "bez e-mailu"}</p>
+                    </div>
+                    <p className="shrink-0 text-xs text-ink/45">
+                      {person.readAt ? `Přečteno ${formatDateTime(person.readAt)}` : "Čeká"}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
@@ -1327,60 +1820,5 @@ function PlayerPickerDialog({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  );
-}
-
-function GamePhotoGallery({
-  items,
-  loading,
-  sendingId,
-  onSend,
-}: {
-  items: Array<{
-    roundId: number;
-    gameType: string;
-    completedAt: string;
-    winnerName: string;
-    imageUrl: string;
-    onTv: boolean;
-  }>;
-  loading: boolean;
-  sendingId: number | null | undefined;
-  onSend: (roundId: number) => void;
-}) {
-  return (
-    <Panel kicker="Galerie ze hry" title="Fotky z kol na TV">
-      <p className="mb-4 text-sm text-ink/55">
-        To, co se fotí na konci kola, je parta a jamka — ne obličej do žebříčku. Vyber snímek a dej ho na TV jako
-        kampaňový slide.
-      </p>
-      {loading ? (
-        <p className="text-sm text-ink/50">Tahám fotky ze hry…</p>
-      ) : items.length === 0 ? (
-        <p className="text-sm text-ink/50">Zatím žádná fotka ze hry. Až někdo na konci kola vyfotí partu, objeví se tady.</p>
-      ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map((item) => (
-            <li key={item.roundId} className="overflow-hidden rounded-[1.4rem] bg-mist">
-              <img src={item.imageUrl} alt="" className="aspect-[4/5] w-full object-cover" />
-              <div className="p-3">
-                <p className="truncate text-sm font-semibold">
-                  {item.winnerName || "Kolo"} · {GAME_LABELS[item.gameType as keyof typeof GAME_LABELS] ?? item.gameType}
-                </p>
-                <p className="text-xs text-ink/45">{formatWhen(item.completedAt)}</p>
-                <button
-                  type="button"
-                  disabled={item.onTv || sendingId === item.roundId}
-                  onClick={() => onSend(item.roundId)}
-                  className="mt-2 rounded-full px-3 py-1.5 text-sm text-teal ring-1 ring-teal/40 hover:bg-teal hover:text-white disabled:opacity-50"
-                >
-                  {item.onTv ? "Už na TV" : sendingId === item.roundId ? "Dávám…" : "Dát na TV"}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Panel>
   );
 }

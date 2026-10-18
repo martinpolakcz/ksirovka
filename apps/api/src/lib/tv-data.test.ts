@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { pragueHour, samePragueDay, shouldRunRetention } from "./tv-data.js";
+import { pragueHour, roundsAfter, samePragueDay, shouldRunRetention } from "./tv-data.js";
 
 test("pragueHour čte hodinu v Europe/Prague", () => {
   assert.equal(pragueHour(new Date("2026-01-15T02:30:00.000Z")), 3);
@@ -20,6 +20,14 @@ test("shouldRunRetention čeká na nastavenou hodinu a běží jednou za den", (
   const alreadyRan = { ...settings, lastPurgeAt: new Date("2026-09-20T01:10:00.000Z") };
   assert.equal(shouldRunRetention(alreadyRan, new Date("2026-09-20T01:40:00.000Z")), false);
   assert.equal(shouldRunRetention(alreadyRan, new Date("2026-09-21T01:05:00.000Z")), true);
+});
+
+test("roundsAfter nechá jen kola od vyčištění pódia", () => {
+  const older = { completedAt: new Date("2026-10-18T08:00:00.000Z") };
+  const newer = { completedAt: new Date("2026-10-18T12:00:00.000Z") };
+  const since = new Date("2026-10-18T10:00:00.000Z");
+  assert.deepEqual(roundsAfter([older, newer], null), [older, newer]);
+  assert.deepEqual(roundsAfter([older, newer], since), [newer]);
 });
 
 test("shouldRunRetention je vypnutý, když cron není zapnutý", () => {

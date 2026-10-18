@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { courseHolePatchSchema } from "./admin.js";
+import { courseHolePatchSchema, tvDataSettingsSchema } from "./admin.js";
 
 test("uložení tipu nesaže plánek ani par", () => {
   const parsed = courseHolePatchSchema.parse({
@@ -44,4 +44,22 @@ test("prázdný tip se uloží jako null, ne jako smazání plánku", () => {
   });
   assert.equal(parsed.tip, null);
   assert.equal(parsed.imageUrl, undefined);
+});
+
+test("uložení rychlosti lišty nesaže cron", () => {
+  const parsed = tvDataSettingsSchema.parse({ tickerSeconds: 24 });
+  assert.equal(parsed.tickerSeconds, 24);
+  assert.equal(parsed.retentionEnabled, undefined);
+  assert.equal(parsed.retentionDays, undefined);
+  assert.equal(parsed.runHour, undefined);
+});
+
+test("uložení cronu nesaže rychlost lišty", () => {
+  const parsed = tvDataSettingsSchema.parse({
+    retentionEnabled: true,
+    retentionDays: 30,
+    runHour: 3,
+  });
+  assert.equal(parsed.retentionEnabled, true);
+  assert.equal(parsed.tickerSeconds, undefined);
 });

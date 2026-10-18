@@ -327,6 +327,12 @@ function peopleAcc(count: number): string {
   return `${count} hráčů`;
 }
 
+function peopleNom(count: number): string {
+  if (count === 1) return "1 hráč";
+  if (count >= 2 && count <= 4) return `${count} hráči`;
+  return `${count} hráčů`;
+}
+
 function campaign(
   id: string,
   title: string,
@@ -375,7 +381,7 @@ export function buildCampaigns(input: {
       campaign(
         "comeback",
         "Ztrácejí se",
-        `${input.lapsed.length} hráčů s e-mailem tu nebylo ${LAPSED_AFTER_DAYS}+ dní. Krátká zpráva stačí: nové jamky, par, kamarád, kterého nechali ve hře.`,
+        `${peopleNom(input.lapsed.length)} s e-mailem tu ${input.lapsed.length === 1 ? "nebyl" : "nebyli"} ${LAPSED_AFTER_DAYS}+ dní. Krátká zpráva stačí: nové jamky, par, kamarád, kterého nechali ve hře.`,
         "Chybíš nám na Kšírovce",
         input.lapsed,
       ),
@@ -393,7 +399,7 @@ export function buildCampaigns(input: {
         campaign(
           `cross-${played}-${missing}`,
           `${GAME_LABELS[played]} → ${GAME_LABELS[missing]}`,
-          `${people.length} lidí hraje ${GAME_LABELS[played].toLocaleLowerCase("cs")} a ${GAME_LABELS[missing].toLocaleLowerCase("cs")} ještě nezkusilo. To je nejjednodušší kampaň: „přijď na vedlejší hřiště“.`,
+          `${peopleNom(people.length)} ${people.length === 1 ? "hraje" : "hrají"} ${GAME_LABELS[played].toLocaleLowerCase("cs")} a ${GAME_LABELS[missing].toLocaleLowerCase("cs")} ${people.length === 1 ? "ještě nezkusil" : "ještě nezkusili"}. To je nejjednodušší kampaň: „přijď na vedlejší hřiště“.`,
           `Zkus na Kšírovce ${GAME_LABELS[missing].toLocaleLowerCase("cs")}`,
           people,
         ),
@@ -406,7 +412,7 @@ export function buildCampaigns(input: {
       campaign(
         "new",
         "Nové tváře",
-        `${input.newThisMonth.length} lidí tu letos v tomhle měsíci hrálo poprvé. Pozvi je na druhou hru, ať z jednorázové návštěvy uděláš návyk.`,
+        `${peopleNom(input.newThisMonth.length)} tu v tomhle měsíci ${input.newThisMonth.length === 1 ? "hrál poprvé" : "hráli poprvé"}. Pozvi ${input.newThisMonth.length === 1 ? "ho" : "je"} na druhou hru, ať z jednorázové návštěvy uděláš návyk.`,
         "Druhé kolo na Kšírovce máš u nás",
         input.newThisMonth,
       ),
@@ -418,7 +424,7 @@ export function buildCampaigns(input: {
       campaign(
         "regulars",
         "Věrní",
-        `${input.regulars.length} hráčů už má aspoň ${REGULAR_ROUNDS} kola a e-mail. To jsou lidé na turnaj, firemní večer, voucher kamarádovi.`,
+        `${peopleNom(input.regulars.length)} už ${input.regulars.length === 1 ? "má" : "mají"} aspoň ${REGULAR_ROUNDS} kola a e-mail. To jsou lidé na turnaj, firemní večer, voucher kamarádovi.`,
         "Máme pro vás turnaj na Kšírovce",
         input.regulars,
       ),

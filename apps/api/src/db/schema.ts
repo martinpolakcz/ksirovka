@@ -258,6 +258,8 @@ export const tvDataSettings = pgTable("tv_data_settings", {
   retentionEnabled: boolean("retention_enabled").notNull().default(false),
   retentionDays: integer("retention_days").notNull().default(30),
   runHour: integer("run_hour").notNull().default(3),
+  tickerSeconds: integer("ticker_seconds").notNull().default(36),
+  podiumSince: timestamp("podium_since"),
   lastPurgeAt: timestamp("last_purge_at"),
   lastPurgeDeleted: integer("last_purge_deleted").notNull().default(0),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

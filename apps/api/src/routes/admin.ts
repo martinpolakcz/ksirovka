@@ -1,5 +1,5 @@
-import type { FastifyInstance } from "fastify";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import type { FastifyInstance, FastifyReply } from "fastify";
+import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { db } from "../db/index.js";
 import {
   scoreNoticeTargets,
@@ -9,6 +9,7 @@ import {
   scoreRoundShareCards,
   scoreRounds,
   tvPromos,
+  type TvDataSettings,
 } from "../db/schema.js";
 import { config } from "../config.js";
 import {
@@ -22,11 +23,12 @@ import {
   countTvData,
   getTvDataSettings,
   purgeRounds,
+  resetTvPodium,
   saveTvDataSettings,
 } from "../lib/tv-data.js";
 import { getCourseGames, patchCourseHole, saveCourseHoleImage } from "../lib/course.js";
 import { loadMarketingSnapshot } from "../lib/marketing.js";
-import { decodeShareCard, shareCardPublicUrl } from "../lib/share-card.js";
+import { decodeShareCard, photoDownloadFilename, profilePhotoPublicUrl, shareCardPublicUrl } from "../lib/share-card.js";
 import { normalizePlayerName } from "../lib/scorecard.js";
 import { roundIdParamSchema } from "../schemas/scorecard.js";
 import {
@@ -47,6 +49,28 @@ const GAME_LABELS: Record<string, string> = {
   minigolf: "Minigolf",
   adventure: "Adventure Golf",
 };
+
+function serializeTvDataSettings(settings: TvDataSettings) {
+  return {
+    retentionEnabled: settings.retentionEnabled,
+    retentionDays: settings.retentionDays,
+    runHour: settings.runHour,
+    tickerSeconds: settings.tickerSeconds,
+    podiumSince: settings.podiumSince?.toISOString() ?? null,
+    lastPurgeAt: settings.lastPurgeAt?.toISOString() ?? null,
+    lastPurgeDeleted: settings.lastPurgeDeleted,
+    updatedAt: settings.updatedAt.toISOString(),
+  };
+}
+
+function sendStoredImage(reply: FastifyReply, mime: string, data: Buffer | Uint8Array, filename?: string) {
+  const bytes = Buffer.isBuffer(data) ? data : Buffer.from(data);
+  if (filename) {
+    reply.header("Content-Disposition", `attachment; filename="${filename}"`);
+  }
+  reply.header("Cache-Control", "private, max-age=60");
+  return reply.type(mime).send(bytes);
+}
 
 function toDate(value: string | null | undefined): Date | null {
   if (!value) return null;
@@ -155,6 +179,69 @@ export async function adminRoutes(app: FastifyInstance) {
       };
     });
 
+    scoped.get("/admin/notices", async () => {
+      const notices = await db
+        .select({
+          id: scoreNotices.id,
+          kind: scoreNotices.kind,
+          title: scoreNotices.title,
+          message: scoreNotices.message,
+          createdAt: scoreNotices.createdAt,
+        })
+        .from(scoreNotices)
+        .orderBy(desc(scoreNotices.createdAt), desc(scoreNotices.id))
+        .limit(50);
+
+      if (notices.length === 0) {
+        return { items: [] };
+      }
+
+      const targets = await db
+        .select({
+          noticeId: scoreNoticeTargets.noticeId,
+          readAt: scoreNoticeTargets.readAt,
+          nickname: scoreProfiles.nickname,
+          name: scoreProfiles.name,
+          email: scoreProfiles.email,
+        })
+        .from(scoreNoticeTargets)
+        .innerJoin(scoreProfiles, eq(scoreProfiles.id, scoreNoticeTargets.profileId))
+        .where(
+          inArray(
+            scoreNoticeTargets.noticeId,
+            notices.map((item) => item.id),
+          ),
+        );
+
+      const byNotice = new Map<number, typeof targets>();
+      for (const row of targets) {
+        const list = byNotice.get(row.noticeId) ?? [];
+        list.push(row);
+        byNotice.set(row.noticeId, list);
+      }
+
+      return {
+        items: notices.map((notice) => {
+          const people = byNotice.get(notice.id) ?? [];
+          return {
+            id: notice.id,
+            kind: notice.kind,
+            title: notice.title,
+            message: notice.message,
+            createdAt: notice.createdAt.toISOString(),
+            sent: people.length,
+            read: people.filter((person) => person.readAt).length,
+            recipients: people.map((person) => ({
+              nickname: person.nickname,
+              name: person.name,
+              email: person.email,
+              readAt: person.readAt?.toISOString() ?? null,
+            })),
+          };
+        }),
+      };
+    });
+
     scoped.get("/admin/game-photos", async () => {
       const cards = await db
         .select({
@@ -162,12 +249,12 @@ export async function adminRoutes(app: FastifyInstance) {
           createdAt: scoreRoundShareCards.createdAt,
           gameType: scoreRounds.gameType,
           completedAt: scoreRounds.completedAt,
+          hidden: scoreRounds.hidden,
         })
         .from(scoreRoundShareCards)
         .innerJoin(scoreRounds, eq(scoreRounds.id, scoreRoundShareCards.roundId))
-        .where(eq(scoreRounds.hidden, false))
         .orderBy(desc(scoreRoundShareCards.createdAt))
-        .limit(40);
+        .limit(200);
 
       const roundIds = cards.map((card) => card.roundId);
       const winners =
@@ -197,12 +284,15 @@ export async function adminRoutes(app: FastifyInstance) {
       return {
         items: cards.map((card) => {
           const imageUrl = shareCardPublicUrl(card.roundId, card.createdAt);
+          const winnerName = winnerByRound.get(card.roundId) ?? "";
           return {
             roundId: card.roundId,
             gameType: card.gameType,
             completedAt: card.completedAt.toISOString(),
-            winnerName: winnerByRound.get(card.roundId) ?? "",
+            winnerName,
             imageUrl,
+            downloadUrl: `/api/v1/admin/game-photos/${card.roundId}/file?download=1`,
+            hidden: card.hidden,
             onTv: onTv.has(imageUrl),
           };
         }),
@@ -260,6 +350,94 @@ export async function adminRoutes(app: FastifyInstance) {
         .returning();
 
       return reply.status(201).send({ item });
+    });
+
+    scoped.get("/admin/game-photos/:id/file", async (request, reply) => {
+      const params = roundIdParamSchema.safeParse(request.params);
+      if (!params.success) {
+        return reply.status(400).send({ error: "Validation failed" });
+      }
+
+      const [card] = await db
+        .select({
+          mime: scoreRoundShareCards.mime,
+          data: scoreRoundShareCards.data,
+          createdAt: scoreRoundShareCards.createdAt,
+          winnerName: scorePlayers.name,
+        })
+        .from(scoreRoundShareCards)
+        .leftJoin(
+          scorePlayers,
+          and(eq(scorePlayers.roundId, scoreRoundShareCards.roundId), eq(scorePlayers.rank, 1)),
+        )
+        .where(eq(scoreRoundShareCards.roundId, params.data.id))
+        .limit(1);
+
+      if (!card) {
+        return reply.status(404).send({ error: "Fotka ze hry chybí" });
+      }
+
+      const download = (request.query as { download?: string }).download === "1";
+      return sendStoredImage(
+        reply,
+        card.mime,
+        card.data,
+        download ? photoDownloadFilename(card.createdAt, card.winnerName ?? "kolo", "hra") : undefined,
+      );
+    });
+
+    scoped.get("/admin/profile-photos", async () => {
+      const rows = await db
+        .select({
+          id: scoreProfiles.id,
+          nickname: scoreProfiles.nickname,
+          name: scoreProfiles.name,
+          updatedAt: scoreProfiles.updatedAt,
+        })
+        .from(scoreProfiles)
+        .where(isNotNull(scoreProfiles.photoMime))
+        .orderBy(desc(scoreProfiles.updatedAt));
+
+      return {
+        items: rows.map((row) => ({
+          id: row.id,
+          nickname: row.nickname,
+          name: row.name,
+          updatedAt: row.updatedAt.toISOString(),
+          imageUrl: profilePhotoPublicUrl(row.id, row.updatedAt),
+          downloadUrl: `/api/v1/admin/profile-photos/${row.id}/file?download=1`,
+        })),
+      };
+    });
+
+    scoped.get("/admin/profile-photos/:id/file", async (request, reply) => {
+      const params = roundIdParamSchema.safeParse(request.params);
+      if (!params.success) {
+        return reply.status(400).send({ error: "Validation failed" });
+      }
+
+      const [row] = await db
+        .select({
+          mime: scoreProfiles.photoMime,
+          data: scoreProfiles.photo,
+          nickname: scoreProfiles.nickname,
+          updatedAt: scoreProfiles.updatedAt,
+        })
+        .from(scoreProfiles)
+        .where(eq(scoreProfiles.id, params.data.id))
+        .limit(1);
+
+      if (!row?.mime || !row.data) {
+        return reply.status(404).send({ error: "Profilová fotka chybí" });
+      }
+
+      const download = (request.query as { download?: string }).download === "1";
+      return sendStoredImage(
+        reply,
+        row.mime,
+        row.data,
+        download ? photoDownloadFilename(row.updatedAt, row.nickname, "profil") : undefined,
+      );
     });
 
     scoped.get("/admin/course", async () => {
@@ -510,14 +688,7 @@ export async function adminRoutes(app: FastifyInstance) {
     scoped.get("/admin/tv-data", async () => {
       const [settings, counts] = await Promise.all([getTvDataSettings(), countTvData()]);
       return {
-        settings: {
-          retentionEnabled: settings.retentionEnabled,
-          retentionDays: settings.retentionDays,
-          runHour: settings.runHour,
-          lastPurgeAt: settings.lastPurgeAt?.toISOString() ?? null,
-          lastPurgeDeleted: settings.lastPurgeDeleted,
-          updatedAt: settings.updatedAt.toISOString(),
-        },
+        settings: serializeTvDataSettings(settings),
         counts,
       };
     });
@@ -534,14 +705,16 @@ export async function adminRoutes(app: FastifyInstance) {
       const settings = await saveTvDataSettings(parsed.data);
       const counts = await countTvData();
       return {
-        settings: {
-          retentionEnabled: settings.retentionEnabled,
-          retentionDays: settings.retentionDays,
-          runHour: settings.runHour,
-          lastPurgeAt: settings.lastPurgeAt?.toISOString() ?? null,
-          lastPurgeDeleted: settings.lastPurgeDeleted,
-          updatedAt: settings.updatedAt.toISOString(),
-        },
+        settings: serializeTvDataSettings(settings),
+        counts,
+      };
+    });
+
+    scoped.post("/admin/tv-data/reset-podium", async () => {
+      const settings = await resetTvPodium();
+      const counts = await countTvData();
+      return {
+        settings: serializeTvDataSettings(settings),
         counts,
       };
     });

@@ -4,9 +4,10 @@ import { CATEGORY_LABELS, GAME_LABELS } from "./tv-shared";
 type TickerProps = {
   promos: TvPromo[];
   recent: ScorecardStats["recentRounds"];
+  seconds?: number;
 };
 
-export function Ticker({ promos, recent }: TickerProps) {
+export function Ticker({ promos, recent, seconds = 36 }: TickerProps) {
   const items = [
     ...promos.map((promo) => `${CATEGORY_LABELS[promo.category]} · ${promo.title} — ${promo.message}`),
     ...recent.slice(0, 6).map(
@@ -26,7 +27,10 @@ export function Ticker({ promos, recent }: TickerProps) {
         LIVE
       </div>
       <div className="tv-ticker-mask relative min-w-0 flex-1">
-        <div className="tv-ticker-track flex w-max gap-16 whitespace-nowrap px-6 text-sm leading-normal text-white lg:px-8 lg:text-lg">
+        <div
+          className="tv-ticker-track flex w-max gap-16 whitespace-nowrap px-6 text-sm leading-normal text-white lg:px-8 lg:text-lg"
+          style={{ animationDuration: `${Math.min(120, Math.max(8, seconds))}s` }}
+        >
           <span>{line}</span>
           <span aria-hidden>{line}</span>
         </div>

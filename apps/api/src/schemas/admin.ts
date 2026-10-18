@@ -65,11 +65,21 @@ export const adminRoundsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });
 
-export const tvDataSettingsSchema = z.object({
-  retentionEnabled: z.boolean(),
-  retentionDays: z.number().int().min(1).max(3650),
-  runHour: z.number().int().min(0).max(23),
-});
+export const tvDataSettingsSchema = z
+  .object({
+    retentionEnabled: z.boolean().optional(),
+    retentionDays: z.number().int().min(1).max(3650).optional(),
+    runHour: z.number().int().min(0).max(23).optional(),
+    tickerSeconds: z.number().int().min(8).max(120).optional(),
+  })
+  .refine(
+    (value) =>
+      value.retentionEnabled !== undefined ||
+      value.retentionDays !== undefined ||
+      value.runHour !== undefined ||
+      value.tickerSeconds !== undefined,
+    { message: "Nic k uložení" },
+  );
 
 export const tvDataPurgeSchema = z.discriminatedUnion("scope", [
   z.object({ scope: z.literal("all") }),

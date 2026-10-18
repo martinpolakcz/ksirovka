@@ -28,6 +28,7 @@ import {
 } from "../lib/scorecard.js";
 import { rememberProfileDevice } from "../lib/marketing.js";
 import { decodeShareCard, profilePhotoPublicUrl, shareCardPublicUrl } from "../lib/share-card.js";
+import { getTvDataSettings, roundsAfter } from "../lib/tv-data.js";
 import { markNoticeReadSchema } from "../schemas/admin.js";
 import {
   clientRoundIdParamSchema,
@@ -639,38 +640,53 @@ export async function scorecardRoutes(app: FastifyInstance) {
     const playersByRound = playersByRoundId;
 
     const officialPlayers = players.filter((p) => officialIds.includes(p.roundId));
-    const playerMap = new Map<
-      string,
-      {
-        playerName: string;
-        bestTotal: number;
-        gameType: GameType;
-        totals: number[];
-        rounds: number;
-      }
-    >();
 
-    for (const player of officialPlayers) {
-      const round = officialRounds.find((r) => r.id === player.roundId);
-      if (!round) continue;
-      const key = `${player.nameNormalized}:${round.gameType}`;
-      const existing = playerMap.get(key);
-      if (!existing) {
-        playerMap.set(key, {
-          playerName: player.name,
-          bestTotal: player.total,
-          gameType: round.gameType as GameType,
-          totals: [player.total],
-          rounds: 1,
-        });
-        continue;
+    function boardFor(sourceRounds: typeof officialRounds, sourcePlayers: typeof officialPlayers) {
+      const playerMap = new Map<
+        string,
+        {
+          playerName: string;
+          bestTotal: number;
+          gameType: GameType;
+          totals: number[];
+          rounds: number;
+        }
+      >();
+
+      for (const player of sourcePlayers) {
+        const round = sourceRounds.find((item) => item.id === player.roundId);
+        if (!round) continue;
+        const key = `${player.nameNormalized}:${round.gameType}`;
+        const existing = playerMap.get(key);
+        if (!existing) {
+          playerMap.set(key, {
+            playerName: player.name,
+            bestTotal: player.total,
+            gameType: round.gameType as GameType,
+            totals: [player.total],
+            rounds: 1,
+          });
+          continue;
+        }
+        existing.rounds += 1;
+        existing.totals.push(player.total);
+        if (player.total < existing.bestTotal) {
+          existing.bestTotal = player.total;
+          existing.playerName = player.name;
+        }
       }
-      existing.rounds += 1;
-      existing.totals.push(player.total);
-      if (player.total < existing.bestTotal) {
-        existing.bestTotal = player.total;
-        existing.playerName = player.name;
-      }
+
+      return [...playerMap.values()]
+        .map((entry) => ({
+          playerName: entry.playerName,
+          gameType: entry.gameType,
+          bestTotal: entry.bestTotal,
+          avgTotal: Math.round((entry.totals.reduce((sum, n) => sum + n, 0) / entry.rounds) * 10) / 10,
+          rounds: entry.rounds,
+          photoUrl: photoByNick.get(normalizePlayerName(entry.playerName)) ?? null,
+        }))
+        .sort((a, b) => a.bestTotal - b.bestTotal || a.avgTotal - b.avgTotal || b.rounds - a.rounds)
+        .map((entry, index) => ({ rank: index + 1, ...entry }));
     }
 
     const photoRows = await db
@@ -688,18 +704,13 @@ export async function scorecardRoutes(app: FastifyInstance) {
       }
     }
 
-    const playerLeaderboard = [...playerMap.values()]
-      .map((entry) => ({
-        playerName: entry.playerName,
-        gameType: entry.gameType,
-        bestTotal: entry.bestTotal,
-        avgTotal: Math.round((entry.totals.reduce((sum, n) => sum + n, 0) / entry.rounds) * 10) / 10,
-        rounds: entry.rounds,
-        photoUrl: photoByNick.get(normalizePlayerName(entry.playerName)) ?? null,
-      }))
-      .sort((a, b) => a.bestTotal - b.bestTotal || a.avgTotal - b.avgTotal || b.rounds - a.rounds)
-      .slice(0, 25)
-      .map((entry, index) => ({ rank: index + 1, ...entry }));
+    const tvSettings = await getTvDataSettings();
+    const podiumOfficial = roundsAfter(officialRounds, tvSettings.podiumSince);
+    const podiumIds = new Set(podiumOfficial.map((round) => round.id));
+    const podiumPlayers = officialPlayers.filter((player) => podiumIds.has(player.roundId));
+
+    const playerLeaderboard = boardFor(officialRounds, officialPlayers).slice(0, 25);
+    const podiumLeaderboard = boardFor(podiumOfficial, podiumPlayers).slice(0, 3);
 
     const holeMap = new Map<
       string,
@@ -817,6 +828,7 @@ export async function scorecardRoutes(app: FastifyInstance) {
           : null,
       },
       playerLeaderboard,
+      podiumLeaderboard,
       holeLeaderboard,
       hardestHoles,
       recentRounds,

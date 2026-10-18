@@ -284,7 +284,7 @@
 }
 
 .tv-ticker-track {
-  animation: tv-ticker 36s linear infinite;
+  animation: tv-ticker var(--tv-ticker-duration, 36s) linear infinite;
   will-change: transform;
 }
 

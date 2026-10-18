@@ -34,6 +34,23 @@ export function decodeShareCard(image: string): { mime: ShareCardMime; data: Buf
   return { mime, data };
 }
 
+export function photoDownloadFilename(when: Date, who: string, kind: "hra" | "profil"): string {
+  const day = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Prague",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(when);
+  const slug =
+    who
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/[^a-zA-Z0-9]+/g, "_")
+      .replace(/^_|_$/g, "")
+      .toLowerCase() || "hrac";
+  return `ksirovka_${kind}_${day}_${slug}.jpg`;
+}
+
 export function shareCardPublicUrl(roundId: number, version: Date | number) {
   const stamp = version instanceof Date ? version.getTime() : version;
   return `/api/v1/scorecard/share-cards/${roundId}?v=${stamp}`;

@@ -95,6 +95,15 @@ export interface ScorecardStats {
     rounds: number;
     photoUrl?: string | null;
   }>;
+  podiumLeaderboard: Array<{
+    rank: number;
+    playerName: string;
+    gameType: ScoreGameType;
+    bestTotal: number;
+    avgTotal: number;
+    rounds: number;
+    photoUrl?: string | null;
+  }>;
   holeLeaderboard: Array<{
     hole: number;
     gameType: ScoreGameType;
@@ -149,6 +158,7 @@ export interface TvPromo {
 }
 
 export interface TvBoard {
+  tickerSeconds: number;
   promos: {
     ticker: TvPromo[];
     featured: TvPromo[];
@@ -169,9 +179,10 @@ export interface AdminRound {
 }
 
 export type AdminTvDataSettingsInput = {
-  retentionEnabled: boolean;
-  retentionDays: number;
-  runHour: number;
+  retentionEnabled?: boolean;
+  retentionDays?: number;
+  runHour?: number;
+  tickerSeconds?: number;
 };
 
 export type AdminTvDataPurgeInput =
@@ -181,7 +192,12 @@ export type AdminTvDataPurgeInput =
   | { scope: "ids"; ids: number[] };
 
 export interface AdminTvData {
-  settings: AdminTvDataSettingsInput & {
+  settings: {
+    retentionEnabled: boolean;
+    retentionDays: number;
+    runHour: number;
+    tickerSeconds: number;
+    podiumSince: string | null;
     lastPurgeAt: string | null;
     lastPurgeDeleted: number;
     updatedAt: string;
@@ -303,13 +319,40 @@ export interface MarketingPlayer {
 
 export type NoticeKind = "news" | "hot" | "happened";
 
+export interface AdminNotice {
+  id: number;
+  kind: NoticeKind;
+  title: string;
+  message: string;
+  createdAt: string;
+  sent: number;
+  read: number;
+  recipients: Array<{
+    nickname: string;
+    name: string | null;
+    email: string | null;
+    readAt: string | null;
+  }>;
+}
+
 export interface GamePhoto {
   roundId: number;
   gameType: MarketingGameType;
   completedAt: string;
   winnerName: string;
   imageUrl: string;
+  downloadUrl: string;
+  hidden: boolean;
   onTv: boolean;
+}
+
+export interface ProfilePhoto {
+  id: number;
+  nickname: string;
+  name: string;
+  updatedAt: string;
+  imageUrl: string;
+  downloadUrl: string;
 }
 
 export class AdminAuthError extends Error {
@@ -447,7 +490,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  getAdminNotices: () => fetchAdmin<{ items: AdminNotice[] }>("/admin/notices"),
   getAdminGamePhotos: () => fetchAdmin<{ items: GamePhoto[] }>("/admin/game-photos"),
+  getAdminProfilePhotos: () => fetchAdmin<{ items: ProfilePhoto[] }>("/admin/profile-photos"),
   sendGamePhotoToTv: (roundId: number) =>
     fetchAdmin<{ item: TvPromo; already?: boolean }>(`/admin/game-photos/${roundId}/tv`, {
       method: "POST",
@@ -465,6 +510,10 @@ export const api = {
     fetchAdmin<AdminTvData>("/admin/tv-data", {
       method: "PATCH",
       body: JSON.stringify(payload),
+    }),
+  resetAdminTvPodium: () =>
+    fetchAdmin<AdminTvData>("/admin/tv-data/reset-podium", {
+      method: "POST",
     }),
   purgeAdminTvData: (payload: AdminTvDataPurgeInput) =>
     fetchAdmin<{ deleted: number }>("/admin/tv-data/purge", {

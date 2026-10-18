@@ -7,6 +7,7 @@ import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 const NAV = [
   { to: "/admin", label: "Reklamy", end: true },
   { to: "/admin/kola", label: "Kola", end: false },
+  { to: "/admin/galerie", label: "Galerie", end: false },
   { to: "/admin/jamky", label: "Jamky", end: false },
   { to: "/admin/strategie", label: "Strategie", end: false },
 ];
@@ -17,7 +18,7 @@ export function AdminLayout() {
 
   useDocumentMeta({
     title: "Admin",
-    description: "Správa Kšírovky: reklamy, kola, jamky a marketing.",
+    description: "Správa Kšírovky: reklamy, kola, galerie, jamky a marketing.",
   });
 
   useEffect(() => {

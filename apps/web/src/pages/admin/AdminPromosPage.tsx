@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminAuthError, api, type PromoPayload, type TvPromo, type TvPromoCategory, type TvPromoSlot } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -86,6 +86,8 @@ export function AdminPromosPage() {
       <section>
         <h1 className="font-display text-4xl">Reklamy</h1>
         <p className="mt-2 text-ink/50">Ticker dole na TV a větší featured slot vpravo.</p>
+
+        <TickerSpeedCard />
 
         <ul className="mt-6 space-y-3">
           {items.map((promo) => (
@@ -211,6 +213,76 @@ export function AdminPromosPage() {
           )}
         </div>
       </form>
+    </div>
+  );
+}
+
+function TickerSpeedCard() {
+  const queryClient = useQueryClient();
+  const [seconds, setSeconds] = useState(36);
+  const [message, setMessage] = useState("");
+
+  const settingsQuery = useQuery({
+    queryKey: ["admin-tv-data"],
+    queryFn: () => api.getAdminTvData(),
+  });
+
+  useEffect(() => {
+    const value = settingsQuery.data?.settings.tickerSeconds;
+    if (typeof value === "number") setSeconds(value);
+  }, [settingsQuery.data]);
+
+  const saveMutation = useMutation({
+    mutationFn: () => api.saveAdminTvData({ tickerSeconds: seconds }),
+    onSuccess: async () => {
+      setMessage("Rychlost lišty je uložená. Na TV se projeví do 10 sekund.");
+      await queryClient.invalidateQueries({ queryKey: ["admin-tv-data"] });
+    },
+    onError: (err) => {
+      if (err instanceof AdminAuthError) {
+        window.location.href = "/admin/login";
+        return;
+      }
+      setMessage(err instanceof Error ? err.message : "Uložení se nepovedlo");
+    },
+  });
+
+  return (
+    <div className="mt-6 rounded-3xl bg-mist p-5">
+      <p className="text-xs uppercase tracking-wider text-teal">Běžící lišta</p>
+      <h2 className="mt-1 font-display text-2xl">Rychlost běhu</h2>
+      <p className="mt-2 text-sm text-ink/50">
+        Kolik sekund trvá jedno projetí textu na TV. Čím menší číslo, tím rychleji lišta běží.
+      </p>
+      <div className="mt-4 flex items-center gap-3 text-xs uppercase tracking-wider text-ink/40">
+        <span>Rychleji</span>
+        <input
+          type="range"
+          min={8}
+          max={120}
+          step={1}
+          value={seconds}
+          onChange={(event) => {
+            setSeconds(Number(event.target.value));
+            setMessage("");
+          }}
+          className="h-2 w-full accent-teal"
+          aria-label="Rychlost běžící lišty"
+        />
+        <span>Pomaleji</span>
+      </div>
+      <p className="mt-3 text-sm text-ink/70">
+        {seconds} {seconds === 1 ? "sekunda" : seconds >= 2 && seconds <= 4 ? "sekundy" : "sekund"} na jedno projetí
+      </p>
+      {message && <p className="mt-2 text-sm text-ink/50">{message}</p>}
+      <Button
+        type="button"
+        className="mt-4"
+        disabled={saveMutation.isPending || settingsQuery.isLoading}
+        onClick={() => saveMutation.mutate()}
+      >
+        {saveMutation.isPending ? "Ukládám…" : "Uložit rychlost"}
+      </Button>
     </div>
   );
 }

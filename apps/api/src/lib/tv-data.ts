@@ -62,18 +62,27 @@ export async function getTvDataSettings(): Promise<TvDataSettings> {
   return row;
 }
 
+export const DEFAULT_TICKER_SECONDS = 36;
+
+export function roundsAfter<T extends { completedAt: Date }>(rounds: T[], since: Date | null | undefined): T[] {
+  if (!since) return rounds;
+  return rounds.filter((round) => round.completedAt >= since);
+}
+
 export async function saveTvDataSettings(input: {
-  retentionEnabled: boolean;
-  retentionDays: number;
-  runHour: number;
+  retentionEnabled?: boolean;
+  retentionDays?: number;
+  runHour?: number;
+  tickerSeconds?: number;
 }): Promise<TvDataSettings> {
   await getTvDataSettings();
   const [item] = await db
     .update(tvDataSettings)
     .set({
-      retentionEnabled: input.retentionEnabled,
-      retentionDays: input.retentionDays,
-      runHour: input.runHour,
+      ...(input.retentionEnabled !== undefined ? { retentionEnabled: input.retentionEnabled } : {}),
+      ...(input.retentionDays !== undefined ? { retentionDays: input.retentionDays } : {}),
+      ...(input.runHour !== undefined ? { runHour: input.runHour } : {}),
+      ...(input.tickerSeconds !== undefined ? { tickerSeconds: input.tickerSeconds } : {}),
       updatedAt: new Date(),
     })
     .where(eq(tvDataSettings.id, 1))
@@ -109,15 +118,22 @@ export async function purgeRounds(scope: PurgeScope): Promise<number> {
   return deleted.length;
 }
 
-export async function markPurgeRun(deleted: number, now = new Date()): Promise<void> {
-  await db
+export async function resetTvPodium(now = new Date()): Promise<TvDataSettings> {
+  await getTvDataSettings();
+  const [item] = await db
     .update(tvDataSettings)
     .set({
+      podiumSince: now,
       lastPurgeAt: now,
-      lastPurgeDeleted: deleted,
+      lastPurgeDeleted: 0,
       updatedAt: now,
     })
-    .where(eq(tvDataSettings.id, 1));
+    .where(eq(tvDataSettings.id, 1))
+    .returning();
+  if (!item) {
+    throw new Error("Nepodařilo se vyčistit pódium");
+  }
+  return item;
 }
 
 export async function runRetentionIfDue(now = new Date()): Promise<{ ran: boolean; deleted: number }> {
@@ -126,9 +142,8 @@ export async function runRetentionIfDue(now = new Date()): Promise<{ ran: boolea
     return { ran: false, deleted: 0 };
   }
 
-  const deleted = await purgeRounds({ scope: "older_than", days: settings.retentionDays });
-  await markPurgeRun(deleted, now);
-  return { ran: true, deleted };
+  await resetTvPodium(now);
+  return { ran: true, deleted: 0 };
 }
 
 export function startTvDataRetentionJob(log: { info: (obj: unknown, msg?: string) => void; error: (obj: unknown, msg?: string) => void }) {
@@ -136,7 +151,7 @@ export function startTvDataRetentionJob(log: { info: (obj: unknown, msg?: string
     try {
       const result = await runRetentionIfDue();
       if (result.ran) {
-        log.info({ deleted: result.deleted }, "TV retention smazala stará kola");
+        log.info("TV pódium vyčištěno (jen tři medaile)");
       }
     } catch (error) {
       log.error({ err: error }, "TV retention selhala");

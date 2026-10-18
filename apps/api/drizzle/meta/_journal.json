@@ -78,6 +78,20 @@
       "when": 1792330000000,
       "tag": "0010_profile_photo_notices",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792340000000,
+      "tag": "0011_tv_ticker_seconds",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792350000000,
+      "tag": "0012_tv_podium_since",
+      "breakpoints": true
     }
   ]
 }

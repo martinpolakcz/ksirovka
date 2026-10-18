@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { and, asc, eq, isNull, lte, or, gte } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { tvPromos } from "../db/schema.js";
+import { DEFAULT_TICKER_SECONDS, getTvDataSettings } from "../lib/tv-data.js";
 
 function isPromoLive(
   promo: { startsAt: Date | null; endsAt: Date | null },
@@ -15,6 +16,7 @@ function isPromoLive(
 export async function tvRoutes(app: FastifyInstance) {
   app.get("/tv/board", async () => {
     const now = new Date();
+    const settings = await getTvDataSettings();
     const rows = await db
       .select()
       .from(tvPromos)
@@ -40,6 +42,7 @@ export async function tvRoutes(app: FastifyInstance) {
     });
 
     return {
+      tickerSeconds: settings.tickerSeconds || DEFAULT_TICKER_SECONDS,
       promos: {
         ticker: live.filter((promo) => promo.slot === "ticker").map(serialize),
         featured: [

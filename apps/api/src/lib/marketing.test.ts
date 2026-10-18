@@ -80,6 +80,10 @@ test("marketing počítá sobotní odpoledne, hry a vs par v Europe/Prague", () 
   assert.equal(snapshot.summary.inboxable, 0);
   assert.ok(snapshot.campaigns.some((item) => item.id === "cross-fotbalgolf-minigolf" && item.emails === 1));
   assert.ok(snapshot.campaigns.some((item) => item.id === "no-email" && item.players === 1));
+  const faces = snapshot.campaigns.find((item) => item.id === "new");
+  assert.ok(faces);
+  assert.ok(faces.nicknames.includes("Martin"));
+  assert.ok(faces.pitch.includes("hráči") || faces.pitch.includes("hráč"));
   assert.equal(snapshot.languages[0]?.id, "cs");
 
   const october = snapshot.months.find((month) => month.month === 10);

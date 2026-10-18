@@ -318,7 +318,7 @@ export function TvBoardPage() {
             <EmptyMorning gameType={gameType} />
           ) : (
             <Podium
-              leaderboard={stats?.playerLeaderboard ?? []}
+              leaderboard={stats?.podiumLeaderboard ?? []}
               recentRounds={photoRounds}
               reducedMotion={reducedMotion}
               compact={!wide}
@@ -380,7 +380,11 @@ export function TvBoardPage() {
       </main>
 
       <QrInvite />
-      <Ticker promos={tickerPromos} recent={dayPulse?.recentRounds ?? []} />
+      <Ticker
+        promos={tickerPromos}
+        recent={dayPulse?.recentRounds ?? []}
+        seconds={boardQuery.data?.tickerSeconds}
+      />
     </div>
   );
 }
