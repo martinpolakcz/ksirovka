@@ -2,7 +2,7 @@
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
 > **Stav:** Produkční API+web na VPS běží (`1f1d713`)  
-> **Poslední aktualizace:** 2026-10-18 17:21
+> **Poslední aktualizace:** 2026-10-18 17:46
 
 ---
 
@@ -242,6 +242,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **TV ticker: rychlost v adminu** — 2026-10-18 na prod `1f1d713`. `/admin` Reklamy má posuvník 8–120 s (default 36). Ukládá `ticker_seconds` do `tv_data_settings` (migrace `0011`). TV si to vezme z `GET /tv/board` do 10 s.
 - [x] **Historie odeslaných kampaní** — 2026-10-18 na prod `1f1d713`. Ve Skladbě zprávy je seznam odeslaných (`GET /admin/notices`): druh, čas, titulek, odesláno/přečteno. Klik otevře pop-up s textem a příjemci, **Použít znovu** doplní skladbu.
 - [x] **TV pódium bez mazání kol** — 2026-10-18 na prod `1f1d713`. Migrace `0012` `tv_data_settings.podium_since`. Cron/`Vyčistit pódium` jen posune cutoff; kola se nemažou. `/tv` medaile z `podiumLeaderboard`; 4–10 a Právě dohráli z celého období. `/admin/galerie` stáhne fotky (401 bez cookie). Noční pódium na prod vypnuté.
+- [ ] **Nahrát obrázek k reklamě** — 2026-10-18 lokálně. Ve formuláři Nová reklama je **Nahrát PNG nebo JPEG** (max 2,5 MB). Ukládá se do `tv_promo_images` (migrace `0013`), veřejně `/uploads/promos/:id`. URL pole zůstává jako alternativa. Na prod ještě `1f1d713`.
 - [x] **Dětské skinny (vlastní vzhled)** — 2026-10-18 v app2, EAS 21. Můj profil (`/login`) má mřížku: Kšírovka (default), Liga, Modrý svět, Pouštní palác, Okruh, Ledová říše. Žádné licencované značky. `themeId` v persist store vedle `locale`. Chrom (Screen, Card, Button, scorecard) bere pack; share karta, TV, splash a logo zůstávají Kšírovka.
 - [x] **Gramatika foursome** — 2026-10-18 v EAS 21. „Čtveřice sdílí jednu míčku“ pryč. Fotbalgolf: **jeden míč** / vlastní míč. Minigolf a adventure: **jeden míček** / vlastní míček. Stejný rozdíl v sk/en/de/pl/vi.
 - [ ] Import obsahu do produkční DB (`import:content`) až poběží API.
@@ -295,6 +296,8 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 | BUG-09 | Uložení tipu v `/admin/jamky` smazalo plánek | 2026-10-18 | Zod `undefined → null`; `optionalText` vynechané pole nechá. Ověřeno lokálně: upload + Uložit tip, `Odstranit plánek` zůstalo. |
 | BUG-10 | TV Právě dohráli: rozhozené sloupce, chybí selfie | 2026-10-18 | CSS grid. 12:21: celá #1 karta = share graphic (špatně). 12:33: pódium původní + fotka, 6 minikaret FIFO zprava. |
 | BUG-11 | Tip jak zahrát chyběl u plánku v appce (náhled i fullscreen) | 2026-10-18 | `HolePlan` overlay + fullscreen box; refetch course při focus scorecard. Částečně i BUG-09 (tip byl smazaný). |
+| BUG-12 | TV pódium: žlutý kruh u fotky + bílý kruh navíc, nesedí | 2026-10-18 | `ring` + overflow na jednom divu. `TvFace` = zlatý okraj paddingem, fotka `display:block` uvnitř. Lokálně, na prod ještě `1f1d713`. |
+| BUG-13 | TV overlay dohrané hry: rohy karty měly černé „uši“ | 2026-10-18 | JPEG má černé rohy + malované zaoblení; CSS `rounded-[28px]` nesedělo. `rounded-[8%/6.4%]` ořízne černé. Lokálně. |
 
 ---
 
@@ -325,7 +328,7 @@ Mobil (Expo) --POST /api/v1/scorecard/rounds--> Fastify + Postgres (VPS)
 - `score_profiles.platform` (`ios`/`android`/`other`) a `locale` (`cs`/`sk`/…) se doplní z appky při `POST /scorecard/profile` a při odeslání kola. Migrace `0009`. `birth_year`, `photo`/`photo_mime`, `notices_opt_in` = migrace `0010`.
 - Inbox kampaní: admin `POST /admin/notices` (kind `news`/`hot`/`happened`) jen na profily s e-mailem a `notices_opt_in`. `GET /admin/notices` je historie odeslaných (titulek, druh, čas, příjemci, přečteno) ve Skladbě zprávy. Ve skladbě na `/admin/strategie` je pop-up Koho oslovit (konkrétní / všichni). Appka `GET /scorecard/notices?email=` + `POST .../read`. Bez lock-screen push.
 - Pars žijí v `score_course_holes` (default 2, admin 1–8). Appka si layout stáhne; bez API padá na 20× par 2. Plánek = PNG/JPEG v `score_course_hole_images`, veřejně `/uploads/holes/{hra}/{n}`. PATCH jamky posílá jen změněná pole — vynechané `undefined` nesmí spadnout na `null` (mazalo by plánek).
-- TV reklamy: tabulka `tv_promos`, admin `/admin` → reklamy, board `GET /api/v1/tv/board`. Rychlost lišty je `tv_data_settings.ticker_seconds` (8–120, default 36), posuvník na Reklamách. Výchozí sada 15 kusů v `apps/api/src/data/tv-promos.ts` (hero + dlaždice ksirovka.cz). Na prod nahráno 2026-09-20 (15 řádků). Pravý sloupec `/tv` je celý reklama; QR je plovoucí lístek vpravo dole nad tickerem (ne karta nad reklamou).
+- TV reklamy: tabulka `tv_promos`, admin `/admin` → reklamy, board `GET /api/v1/tv/board`. Rychlost lišty je `tv_data_settings.ticker_seconds` (8–120, default 36), posuvník na Reklamách. Obrázek jde nahrát jako PNG/JPEG (`POST /admin/promos/:id/image`) do `tv_promo_images`, veřejně `/uploads/promos/:id`; URL pole zůstává. Výchozí sada 15 kusů v `apps/api/src/data/tv-promos.ts` (hero + dlaždice ksirovka.cz). Na prod nahráno 2026-09-20 (15 řádků). Pravý sloupec `/tv` je celý reklama; QR je plovoucí lístek vpravo dole nad tickerem (ne karta nad reklamou).
 - Share karta kola: tabulka `score_round_share_cards` (1:1 na kolo). Mobil po fotce ze hry POSTuje JPEG (max ~2,5 MB) — parta/jamka, ne obličej do žebříčku. Admin `/admin/galerie` je přehled všech fotek ze hry i selfie (`GET /admin/game-photos`, `GET /admin/profile-photos`) se stažením. `POST .../tv` založí `tv_promos.slot=gallery`. `/tv` pódium: `podiumLeaderboard` (kola od `podium_since`); 4–10 a Právě dohráli z celého období. GET share-card / profile-photo má `Cross-Origin-Resource-Policy: cross-origin`. Caddy `request_body max_size 5MB`.
 
 ---

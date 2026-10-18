@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import type { ScorecardStats } from "@/lib/api";
 import { GAME_COLORS, GAME_LABELS, recentStripSlots, shareCardSrc } from "./tv-shared";
-import { ShareFace } from "./ShareFace";
+import { TvFace } from "./ShareFace";
 
 type RecentFinishStripProps = {
   rounds: ScorecardStats["recentRounds"];
@@ -47,20 +47,15 @@ export function RecentFinishStrip({ rounds, reducedMotion }: RecentFinishStripPr
                     : "flex h-[9.25rem] min-w-0 items-center gap-2 rounded-[1.35rem] bg-forest-100 px-2 ring-1 ring-teal/15 lg:h-[11.25rem] lg:gap-2.5 lg:px-2.5"
                 }
               >
-                {photo ? (
-                  <ShareFace
-                    src={photo}
-                    alt=""
-                    className="size-[5.25rem] shrink-0 rounded-full ring-[3px] ring-[#d4a853] lg:size-[6.75rem]"
-                  />
-                ) : (
-                  <div
-                    className="flex size-[5.25rem] shrink-0 items-center justify-center rounded-full text-3xl font-semibold text-white ring-[3px] ring-[#d4a853] lg:size-[6.75rem] lg:text-4xl"
-                    style={{ backgroundColor: GAME_COLORS[round.gameType] }}
-                  >
-                    {round.winnerName.slice(0, 1)}
-                  </div>
-                )}
+                <TvFace
+                  src={photo}
+                  alt=""
+                  sizeClassName="size-[5.25rem] lg:size-[6.75rem]"
+                  fallbackClassName="text-3xl font-semibold text-white lg:text-4xl"
+                  fallbackStyle={{ backgroundColor: GAME_COLORS[round.gameType] }}
+                >
+                  {round.winnerName.slice(0, 1)}
+                </TvFace>
                 <div className="min-w-0 flex-1 pr-1">
                   <p className="font-display text-[1.85rem] font-semibold leading-none tabular-nums text-orange lg:text-[2.75rem]">
                     {round.winnerTotal}

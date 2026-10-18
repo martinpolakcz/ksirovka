@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import type { ScorecardStats } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { GAME_LABELS, kolaLabel, profilePhotoFor } from "./tv-shared";
-import { ShareFace } from "./ShareFace";
+import { TvFace } from "./ShareFace";
 
 const PLACE_META = [
   { place: 2, medal: "🥈", height: "h-auto lg:h-[78%]", order: "order-2 lg:order-1", bg: "bg-white", accent: "text-[#8a8a8a]" },
@@ -24,12 +24,6 @@ export function Podium({ leaderboard, reducedMotion, compact = false }: PodiumPr
         const row = leaderboard.find((item) => item.rank === meta.place);
         const first = meta.place === 1;
         const photo = profilePhotoFor(row);
-        const faceClass = cn(
-          "shrink-0",
-          first
-            ? "size-24 rounded-full ring-[3px] ring-white/80 lg:size-36 xl:size-44"
-            : "size-16 rounded-full ring-[3px] ring-[#d4a853] lg:size-24 xl:size-28",
-        );
         return (
           <motion.article
             key={meta.place}
@@ -46,19 +40,18 @@ export function Podium({ leaderboard, reducedMotion, compact = false }: PodiumPr
           >
             <div className="flex items-start justify-between gap-3">
               <p className="text-3xl leading-none lg:text-5xl">{meta.medal}</p>
-              {photo ? (
-                <ShareFace src={photo} alt={row?.playerName ?? ""} className={faceClass} />
-              ) : (
-                <div
-                  className={cn(
-                    faceClass,
-                    "flex items-center justify-center font-display font-semibold",
-                    first ? "bg-white/20 text-4xl text-white lg:text-6xl" : "bg-forest-100 text-2xl text-teal lg:text-4xl",
-                  )}
-                >
-                  {(row?.playerName ?? "?").slice(0, 1)}
-                </div>
-              )}
+              <TvFace
+                src={photo}
+                alt={row?.playerName ?? ""}
+                sizeClassName={first ? "size-24 lg:size-36 xl:size-44" : "size-16 lg:size-24 xl:size-28"}
+                fallbackClassName={
+                  first
+                    ? "bg-white/20 font-display text-4xl font-semibold text-white lg:text-6xl"
+                    : "bg-forest-100 font-display text-2xl font-semibold text-teal lg:text-4xl"
+                }
+              >
+                {(row?.playerName ?? "?").slice(0, 1)}
+              </TvFace>
             </div>
             <div>
               <p

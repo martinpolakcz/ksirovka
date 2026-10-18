@@ -4,6 +4,15 @@ import { AdminAuthError, api, type PromoPayload, type TvPromo, type TvPromoCateg
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(reader.error ?? new Error("Soubor se nepodařilo přečíst"));
+    reader.readAsDataURL(file);
+  });
+}
+
 const EMPTY_FORM: PromoPayload = {
   slot: "ticker",
   category: "golf",
@@ -19,6 +28,9 @@ export function AdminPromosPage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<PromoPayload>(EMPTY_FORM);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
   const [error, setError] = useState("");
 
   const promosQuery = useQuery({
@@ -31,16 +43,26 @@ export function AdminPromosPage() {
       const payload: PromoPayload = {
         ...form,
         href: form.href || null,
-        imageUrl: form.imageUrl || null,
+        imageUrl: pendingFile ? form.imageUrl || null : removeImage ? null : form.imageUrl || null,
       };
-      if (editingId) {
-        return api.updateAdminPromo(editingId, payload);
+      const saved = editingId
+        ? await api.updateAdminPromo(editingId, payload)
+        : await api.createAdminPromo(payload);
+      if (pendingFile) {
+        const image = await readFileAsDataUrl(pendingFile);
+        return api.uploadAdminPromoImage(saved.item.id, image);
       }
-      return api.createAdminPromo(payload);
+      if (removeImage) {
+        return api.deleteAdminPromoImage(saved.item.id);
+      }
+      return saved;
     },
     onSuccess: async () => {
       setForm(EMPTY_FORM);
       setEditingId(null);
+      setPendingFile(null);
+      setPreview(null);
+      setRemoveImage(false);
       setError("");
       await queryClient.invalidateQueries({ queryKey: ["admin-promos"] });
     },
@@ -60,8 +82,19 @@ export function AdminPromosPage() {
     },
   });
 
+  function resetForm() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setPendingFile(null);
+    setPreview(null);
+    setRemoveImage(false);
+  }
+
   function edit(promo: TvPromo) {
     setEditingId(promo.id);
+    setPendingFile(null);
+    setPreview(null);
+    setRemoveImage(false);
     setForm({
       slot: promo.slot,
       category: promo.category,
@@ -80,6 +113,7 @@ export function AdminPromosPage() {
   }
 
   const items = promosQuery.data?.items ?? [];
+  const shownImage = preview || (!removeImage ? form.imageUrl || null : null);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
@@ -95,6 +129,13 @@ export function AdminPromosPage() {
               key={promo.id}
               className="flex flex-col gap-3 rounded-3xl bg-mist p-4 md:flex-row md:items-center"
             >
+              {promo.imageUrl ? (
+                <img
+                  src={promo.imageUrl}
+                  alt=""
+                  className="h-16 w-24 shrink-0 rounded-2xl bg-white object-cover"
+                />
+              ) : null}
               <div className="min-w-0 flex-1">
                 <p className="text-xs uppercase tracking-wider text-teal">
                   {promo.slot} · {promo.category}
@@ -169,10 +210,56 @@ export function AdminPromosPage() {
           />
         </label>
         <Field label="Odkaz" value={form.href ?? ""} onChange={(href) => setForm((current) => ({ ...current, href }))} />
+
+        <div className="mt-4">
+          <p className="text-sm text-ink/70">Obrázek</p>
+          {shownImage ? (
+            <img src={shownImage} alt="" className="mt-2 h-28 w-full rounded-2xl bg-white object-cover" />
+          ) : (
+            <div className="mt-2 flex h-28 items-center justify-center rounded-2xl bg-white text-sm text-ink/40">
+              Bez obrázku
+            </div>
+          )}
+          <label className="mt-2 block text-sm text-ink/70">
+            Nahrát PNG nebo JPEG
+            <input
+              type="file"
+              accept="image/png,image/jpeg"
+              className="mt-2 block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-orange file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (!file) return;
+                setPendingFile(file);
+                setPreview(URL.createObjectURL(file));
+                setRemoveImage(false);
+              }}
+            />
+          </label>
+          {pendingFile ? <p className="mt-1 text-xs text-ink/45">{pendingFile.name}</p> : null}
+          {shownImage ? (
+            <button
+              type="button"
+              className="mt-2 text-sm text-ink/60 hover:text-orange"
+              onClick={() => {
+                setPendingFile(null);
+                setPreview(null);
+                setRemoveImage(true);
+                setForm((current) => ({ ...current, imageUrl: "" }));
+              }}
+            >
+              Odstranit obrázek
+            </button>
+          ) : null}
+        </div>
+
         <Field
-          label="Obrázek URL"
+          label="Obrázek URL (když nenahráváš soubor)"
           value={form.imageUrl ?? ""}
-          onChange={(imageUrl) => setForm((current) => ({ ...current, imageUrl }))}
+          onChange={(imageUrl) => {
+            setForm((current) => ({ ...current, imageUrl }));
+            if (imageUrl) setRemoveImage(false);
+          }}
         />
         <Field
           label="Pořadí"
@@ -200,14 +287,7 @@ export function AdminPromosPage() {
             {editingId ? "Uložit" : "Přidat"}
           </Button>
           {editingId && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setEditingId(null);
-                setForm(EMPTY_FORM);
-              }}
-            >
+            <Button type="button" variant="ghost" onClick={resetForm}>
               Zrušit
             </Button>
           )}

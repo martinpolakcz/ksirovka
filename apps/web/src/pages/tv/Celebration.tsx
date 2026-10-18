@@ -37,7 +37,7 @@ export function Celebration({ round, reducedMotion }: CelebrationProps) {
               <img
                 src={shareCard}
                 alt={`${round.winnerName} · ${round.winnerTotal}`}
-                className="max-h-[82vh] w-auto rounded-[28px] object-contain shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+                className="block max-h-[82vh] w-auto rounded-[8%/6.4%] object-contain shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
               />
             </motion.div>
           ) : (

@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import type { TvPromo } from "@/lib/api";
-import { assetUrl } from "@/lib/utils";
-import { CATEGORY_LABELS } from "./tv-shared";
+import { CATEGORY_LABELS, promoImageSrc } from "./tv-shared";
 
 type FullscreenAdProps = {
   promo: TvPromo | null;
@@ -21,7 +20,7 @@ export function FullscreenAd({ promo, reducedMotion }: FullscreenAdProps) {
         >
           {promo.imageUrl && (
             <img
-              src={assetUrl(promo.imageUrl)}
+              src={promoImageSrc(promo.imageUrl) ?? promo.imageUrl}
               alt=""
               className="absolute inset-0 h-full w-full object-cover object-center"
             />

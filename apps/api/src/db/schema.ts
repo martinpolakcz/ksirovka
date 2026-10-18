@@ -288,6 +288,15 @@ export const tvPromos = pgTable(
   ],
 );
 
+export const tvPromoImages = pgTable("tv_promo_images", {
+  promoId: integer("promo_id")
+    .primaryKey()
+    .references(() => tvPromos.id, { onDelete: "cascade" }),
+  mime: text("mime").notNull(),
+  data: bytea("data").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 /** Reserved for future reservation system */
 export const reservationSlots = pgTable("reservation_slots", {
   id: serial("id").primaryKey(),

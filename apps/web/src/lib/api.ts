@@ -461,6 +461,13 @@ export const api = {
     }),
   deleteAdminPromo: (id: number) =>
     fetchAdmin<void>(`/admin/promos/${id}`, { method: "DELETE" }),
+  uploadAdminPromoImage: (id: number, image: string) =>
+    fetchAdmin<{ item: TvPromo }>(`/admin/promos/${id}/image`, {
+      method: "POST",
+      body: JSON.stringify({ image }),
+    }),
+  deleteAdminPromoImage: (id: number) =>
+    fetchAdmin<{ item: TvPromo }>(`/admin/promos/${id}/image`, { method: "DELETE" }),
   getAdminCourse: () => fetchAdmin<{ games: CourseGames }>("/admin/course"),
   patchAdminCourse: (payload: {
     gameType: ScoreGameType;

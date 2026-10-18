@@ -52,6 +52,10 @@ export const uploadCourseImageSchema = z.object({
   image: z.string().min(32).max(3_500_000),
 });
 
+export const uploadPromoImageSchema = z.object({
+  image: z.string().min(32).max(3_500_000),
+});
+
 export const courseHolePatchSchema = z.object({
   gameType: z.enum(["fotbalgolf", "minigolf", "adventure"]),
   hole: z.number().int().min(1).max(20),

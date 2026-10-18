@@ -1,4 +1,5 @@
 import type { ScoreGameType, ScorecardStats } from "@/lib/api";
+import { assetUrl } from "@/lib/utils";
 
 export const TV_PERIODS = ["day", "week", "month"] as const;
 export type TvPeriod = (typeof TV_PERIODS)[number];
@@ -76,6 +77,14 @@ export function kolaLabel(count: number) {
   if (count === 1) return "1 kolo";
   if (count >= 2 && count <= 4) return `${count} kola`;
   return `${count} kol`;
+}
+
+export function promoImageSrc(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("/uploads/") || url.startsWith("/api/")) return url;
+  const local = shareCardSrc(url);
+  if (local && (local.startsWith("/uploads/") || local.startsWith("/api/"))) return local;
+  return assetUrl(url);
 }
 
 export function shareCardSrc(url: string | null | undefined): string | null {

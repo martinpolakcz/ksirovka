@@ -27,6 +27,7 @@ import {
   saveTvDataSettings,
 } from "../lib/tv-data.js";
 import { getCourseGames, patchCourseHole, saveCourseHoleImage } from "../lib/course.js";
+import { deletePromoImage, savePromoImage } from "../lib/promo-image.js";
 import { loadMarketingSnapshot } from "../lib/marketing.js";
 import { decodeShareCard, photoDownloadFilename, profilePhotoPublicUrl, shareCardPublicUrl } from "../lib/share-card.js";
 import { normalizePlayerName } from "../lib/scorecard.js";
@@ -42,6 +43,7 @@ import {
   tvDataPurgeSchema,
   tvDataSettingsSchema,
   uploadCourseImageSchema,
+  uploadPromoImageSchema,
 } from "../schemas/admin.js";
 
 const GAME_LABELS: Record<string, string> = {
@@ -573,6 +575,57 @@ export async function adminRoutes(app: FastifyInstance) {
         return reply.status(404).send({ error: "Reklama nenalezena" });
       }
 
+      return { item };
+    });
+
+    scoped.post(
+      "/admin/promos/:id/image",
+      { bodyLimit: 3_500_000 },
+      async (request, reply) => {
+        const id = Number((request.params as { id: string }).id);
+        if (!Number.isInteger(id) || id < 1) {
+          return reply.status(400).send({ error: "Neplatné id" });
+        }
+        const parsed = uploadPromoImageSchema.safeParse(request.body);
+        if (!parsed.success) {
+          return reply.status(400).send({
+            error: "Validation failed",
+            details: parsed.error.flatten(),
+          });
+        }
+        const decoded = decodeShareCard(parsed.data.image);
+        if ("error" in decoded) {
+          const status = decoded.error === "size" ? 413 : 400;
+          const message =
+            decoded.error === "type"
+              ? "Nahraj PNG nebo JPEG"
+              : decoded.error === "size"
+                ? "Soubor je moc velký (max 2,5 MB)"
+                : "Soubor se nepodařilo přečíst";
+          return reply.status(status).send({ error: message });
+        }
+        try {
+          const item = await savePromoImage({
+            promoId: id,
+            mime: decoded.mime,
+            data: decoded.data,
+          });
+          return { item };
+        } catch {
+          return reply.status(404).send({ error: "Reklama nenalezena" });
+        }
+      },
+    );
+
+    scoped.delete("/admin/promos/:id/image", async (request, reply) => {
+      const id = Number((request.params as { id: string }).id);
+      if (!Number.isInteger(id) || id < 1) {
+        return reply.status(400).send({ error: "Neplatné id" });
+      }
+      const item = await deletePromoImage(id);
+      if (!item) {
+        return reply.status(404).send({ error: "Reklama nenalezena" });
+      }
       return { item };
     });
 
