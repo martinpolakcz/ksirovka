@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`012ed38`)  
-> **Poslední aktualizace:** 2026-10-18 12:20
+> **Stav:** Produkční API+web na VPS běží (`012ed38`); TV redesign (pódium + 6 fotek) čeká na deploy  
+> **Poslední aktualizace:** 2026-10-18 12:33
 
 ---
 
@@ -232,7 +232,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Plánky jamek ve hře** — 2026-10-17. API `3070e34` (migrace `0006`). 2026-10-18: upload PNG/JPEG na `/uploads/holes/…`. Tip je v appce na náhledu i ve fullscreen. Par u jamky se mění v adminu. Detail: `rhino/hole-maps.md`.
 - [x] **Scorecard: tři akce jako tlačítka** — 2026-10-18. Přeskočit / Ukončit / Zrušit pod Potvrdit jamku jsou orámovaná tlačítka (ikona + krátký popisek), ne zlatý text. Zrušit je červené.
 - [x] **Share karta: copy + název souboru** — 2026-10-18. Věta „Nakopal jsem to sem…“ z karty pryč. Soubor `ksirovka_YYYY-MM-DD_jmeno.jpg` (Praha, bez diakritiky).
-- [x] **Share karta na TV** — 2026-10-18. Overlay 11 s. Selfie patří na 1. místo pódia (velká karta nahoře), ne do Právě dohráli. Stats vrací absolutní `shareCardUrl`.
+- [x] **Share karta na TV** — 2026-10-18. Overlay 11 s. Pódium má původní jméno/skóre/kola a fotku hráče (ne celou brand kartu místo #1). Právě dohráli = 6 minikaret s fotkou, nejstarší vlevo, nový zprava. `shareCardUrl` je relativní `/api/v1/…` (lokální proxy i prod stejný origin).
 - [ ] **Liquid glass na chromu scorecard** — pin `LiveStandings` + akcí přes `expo-blur`, ať mřížka jamek jede pod lištou. Audit: `rhino/ui-liquid-glass.md`.
 - [ ] Import obsahu do produkční DB (`import:content`) až poběží API.
 - [ ] Staging na VPS (`./scripts/deploy.sh --staging`) s vlastními daty.
@@ -260,7 +260,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Share copy** — 2026-10-18. Divná věta na kartě pryč; zůstává skóre, jméno, „Zahraj si na Kšírovce · Brno“.
 - [x] **Commit + deploy share/TV + EAS 17** — 2026-10-18. API `4403a4c` na prod. Mobil `430a737` + bump `3dccd73`.
 - [x] **Commit + deploy tip/par/TV zarovnání + EAS 19** — 2026-10-18. API `00654e3`. Mobil `6c1916a` + bump `5183b17`.
-- [x] **Selfie na 1. místo pódia** — 2026-10-18. Nasazeno `012ed38`. Karta z fotky je nahoře místo jména; Právě dohráli je zase jen seznam. Rollback = `00654e3`.
+- [x] **Selfie na 1. místo pódia** — 2026-10-18. `012ed38` nahradil celou #1 kartu share graphic — zamítnuto. Nově: původní pódium + fotka, dole 6 výsledků. Rollback stávající prod = `00654e3`.
 
 ---
 
@@ -281,7 +281,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 | BUG-07 | iframe `/tv` na martinpolak.cz freelancer | 2026-09-20 | Caddy: `/tv` bez X-Frame-Options, `frame-ancestors` jen martinpolak.cz. Image pořád `9afc089`. |
 | BUG-08 | Jazyk v appce pod ikonami status baru | 2026-09-24 | Header row v layoutu pod SafeArea; `LanguagePicker` už není absolute. |
 | BUG-09 | Uložení tipu v `/admin/jamky` smazalo plánek | 2026-10-18 | Zod `undefined → null`; `optionalText` vynechané pole nechá. Ověřeno lokálně: upload + Uložit tip, `Odstranit plánek` zůstalo. |
-| BUG-10 | TV Právě dohráli: rozhozené sloupce, chybí selfie | 2026-10-18 | CSS grid 3 sloupce. Selfie 2026-10-18 přesunuta z panelu na 1. místo pódia (velká karta). |
+| BUG-10 | TV Právě dohráli: rozhozené sloupce, chybí selfie | 2026-10-18 | CSS grid. 12:21: celá #1 karta = share graphic (špatně). 12:33: pódium původní + fotka, 6 minikaret FIFO zprava. |
 | BUG-11 | Tip jak zahrát chyběl u plánku v appce (náhled i fullscreen) | 2026-10-18 | `HolePlan` overlay + fullscreen box; refetch course při focus scorecard. Částečně i BUG-09 (tip byl smazaný). |
 
 ---
@@ -312,7 +312,7 @@ Mobil (Expo) --POST /api/v1/scorecard/rounds--> Fastify + Postgres (VPS)
 - TV admin `/admin/kola` maže kola (cascade hráči + jamky). `/admin/jamky` vypíná jamky v rekonstrukci (`PATCH /api/v1/admin/course`). Cron retence běží v procesu API (ne systemd): jednou denně v `runHour` Europe/Prague, maže kola starší než `retentionDays`. Výchozí vypnuto.
 - Pars žijí v `score_course_holes` (default 2, admin 1–8). Appka si layout stáhne; bez API padá na 20× par 2. Plánek = PNG/JPEG v `score_course_hole_images`, veřejně `/uploads/holes/{hra}/{n}`. PATCH jamky posílá jen změněná pole — vynechané `undefined` nesmí spadnout na `null` (mazalo by plánek).
 - TV reklamy: tabulka `tv_promos`, admin `/admin` → reklamy, board `GET /api/v1/tv/board`. Výchozí sada 15 kusů v `apps/api/src/data/tv-promos.ts` (hero + dlaždice ksirovka.cz). Na prod nahráno 2026-09-20 (15 řádků).
-- Share karta kola: tabulka `score_round_share_cards` (1:1 na kolo, cascade s retencí). Mobil po selfie/sdílení POSTuje JPEG (max ~2,5 MB). Stats vrací absolutní `shareCardUrl`. `/tv` slaví overlay 11 s a poslední kartu nechá v panelu Právě dohráli. Caddy `request_body max_size 5MB`.
+- Share karta kola: tabulka `score_round_share_cards` (1:1 na kolo, cascade s retencí). Mobil po selfie/sdílení POSTuje JPEG (max ~2,5 MB). Stats vrací relativní `shareCardUrl`. `/tv`: pódium 2/1/3 v původní velikosti (jméno, hra, kola, skóre + oříznutá fotka), pod tím 6 minikaret Právě dohráli (nejstarší vlevo, nový zprava), pak 4–10 / legenda / QR+reklama. Overlay oslavy 11 s. GET share-card má `Cross-Origin-Resource-Policy: cross-origin`. Caddy `request_body max_size 5MB`.
 
 ---
 

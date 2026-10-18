@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import type { ScorecardStats } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { GAME_LABELS } from "./tv-shared";
+import { GAME_LABELS, kolaLabel, sharePhotoFor } from "./tv-shared";
 
 const PLACE_META = [
   { place: 2, medal: "🥈", height: "h-auto lg:h-[78%]", order: "order-2 lg:order-1", bg: "bg-white", accent: "text-[#8a8a8a]" },
@@ -11,18 +11,18 @@ const PLACE_META = [
 
 type PodiumProps = {
   leaderboard: ScorecardStats["playerLeaderboard"];
+  recentRounds?: ScorecardStats["recentRounds"];
   reducedMotion: boolean;
   compact?: boolean;
-  shareCardUrl?: string | null;
 };
 
-export function Podium({ leaderboard, reducedMotion, compact = false, shareCardUrl }: PodiumProps) {
+export function Podium({ leaderboard, recentRounds, reducedMotion, compact = false }: PodiumProps) {
   return (
     <div className="flex flex-col gap-3 lg:grid lg:h-full lg:grid-cols-3 lg:items-end lg:gap-4 xl:gap-8">
       {PLACE_META.map((meta, index) => {
         const row = leaderboard.find((item) => item.rank === meta.place);
         const first = meta.place === 1;
-        const showShare = first && Boolean(shareCardUrl);
+        const photo = sharePhotoFor(row?.playerName, row?.gameType, recentRounds);
         return (
           <motion.article
             key={meta.place}
@@ -30,56 +30,55 @@ export function Podium({ leaderboard, reducedMotion, compact = false, shareCardU
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: index * 0.08, duration: 0.45 }}
             className={cn(
-              "relative flex overflow-hidden rounded-[1.6rem] shadow-[0_12px_40px_rgba(14,173,167,0.12)] lg:rounded-[2rem]",
-              showShare ? "min-h-56 items-center justify-center p-0" : "flex-col justify-between px-5 py-5 lg:px-7 lg:py-8",
+              "relative flex flex-col justify-between rounded-[1.6rem] px-5 py-5 shadow-[0_12px_40px_rgba(14,173,167,0.12)] lg:rounded-[2rem] lg:px-7 lg:py-8",
               meta.height,
               meta.order,
               meta.bg,
               first ? "text-white" : "text-ink ring-1 ring-ink/10",
             )}
           >
-            {showShare ? (
-              <>
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-3xl leading-none lg:text-5xl">{meta.medal}</p>
+              {photo ? (
                 <img
-                  src={shareCardUrl ?? ""}
-                  alt={`${row?.playerName ?? "Kolo"} · ${row?.bestTotal ?? ""}`}
-                  className="h-full max-h-full w-auto max-w-full object-contain"
+                  src={photo}
+                  alt={row?.playerName ?? ""}
+                  className={cn(
+                    "shrink-0 object-cover object-[center_30%]",
+                    first
+                      ? "size-24 rounded-[1.4rem] ring-2 ring-white/35 lg:size-36 xl:size-44"
+                      : "size-16 rounded-2xl ring-1 ring-ink/10 lg:size-24 xl:size-28",
+                  )}
                   onError={(event) => {
                     event.currentTarget.style.display = "none";
                   }}
                 />
-                <p className="absolute left-5 top-5 text-3xl leading-none drop-shadow lg:left-7 lg:top-7 lg:text-5xl">
-                  {meta.medal}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-3xl leading-none lg:text-5xl">{meta.medal}</p>
-                <div>
-                  <p
-                    className={cn(
-                      "font-semibold leading-tight",
-                      first ? "text-3xl lg:text-5xl xl:text-7xl" : "text-2xl lg:text-3xl xl:text-5xl",
-                    )}
-                  >
-                    {row?.playerName ?? "Čekáme"}
-                  </p>
-                  <p className={cn("mt-1 text-sm lg:mt-2", first ? "text-white/70" : "text-ink/45")}>
-                    {row ? GAME_LABELS[row.gameType] : "na hrdinu"}
-                  </p>
-                  <p
-                    className={cn(
-                      "mt-3 font-semibold leading-none lg:mt-4",
-                      first
-                        ? "text-4xl text-white lg:text-6xl xl:text-8xl"
-                        : cn("text-3xl lg:text-4xl xl:text-6xl", meta.accent),
-                    )}
-                  >
-                    {row?.bestTotal ?? "—"}
-                  </p>
-                </div>
-              </>
-            )}
+              ) : null}
+            </div>
+            <div>
+              <p
+                className={cn(
+                  "font-semibold leading-tight",
+                  first ? "text-3xl lg:text-5xl xl:text-7xl" : "text-2xl lg:text-3xl xl:text-5xl",
+                )}
+              >
+                {row?.playerName ?? "Čekáme"}
+              </p>
+              <p className={cn("mt-1 text-sm lg:mt-2", first ? "text-white/70" : "text-ink/45")}>
+                {row ? GAME_LABELS[row.gameType] : "na hrdinu"}
+                {row ? ` · ${kolaLabel(row.rounds)}` : ""}
+              </p>
+              <p
+                className={cn(
+                  "mt-3 font-semibold leading-none lg:mt-4",
+                  first
+                    ? "text-4xl text-white lg:text-6xl xl:text-8xl"
+                    : cn("text-3xl lg:text-4xl xl:text-6xl", meta.accent),
+                )}
+              >
+                {row?.bestTotal ?? "—"}
+              </p>
+            </div>
           </motion.article>
         );
       })}

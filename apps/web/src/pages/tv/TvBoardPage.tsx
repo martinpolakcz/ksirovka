@@ -11,6 +11,7 @@ import { LegendChallenge } from "./LegendChallenge";
 import { PeriodWipe } from "./PeriodWipe";
 import { Podium } from "./Podium";
 import { QrInvite } from "./QrInvite";
+import { RecentFinishStrip } from "./RecentFinishStrip";
 import { StoryStats } from "./StoryStats";
 import { Ticker } from "./Ticker";
 import {
@@ -224,8 +225,16 @@ export function TvBoardPage() {
 
   const rest = useMemo(() => stats?.playerLeaderboard.slice(3, 10) ?? [], [stats]);
   const hardest = useMemo(() => stats?.hardestHoles.slice(0, 3) ?? [], [stats]);
-  const recent = dayPulse?.recentRounds.slice(0, 3) ?? [];
-  const latestShare = dayPulse?.recentRounds.find((round) => round.shareCardUrl) ?? null;
+  const photoRounds = useMemo(() => {
+    const seen = new Set<number>();
+    const merged = [];
+    for (const round of [...(dayPulse?.recentRounds ?? []), ...(stats?.recentRounds ?? [])]) {
+      if (seen.has(round.id)) continue;
+      seen.add(round.id);
+      merged.push(round);
+    }
+    return merged;
+  }, [dayPulse, stats]);
   const sceneBest = stats?.playerLeaderboard[0];
   const activeAd = featured[featuredIndex % Math.max(featured.length, 1)];
 
@@ -288,19 +297,21 @@ export function TvBoardPage() {
         </p>
       </header>
 
-      <main className="relative z-10 flex flex-col gap-4 px-4 pb-3 lg:grid lg:min-h-0 lg:flex-1 lg:grid-rows-[minmax(0,1.15fr)_minmax(0,0.95fr)] lg:gap-5 lg:px-6">
+      <main className="relative z-10 flex flex-col gap-4 px-4 pb-3 lg:grid lg:min-h-0 lg:flex-1 lg:grid-rows-[minmax(0,1.25fr)_auto_minmax(0,0.8fr)] lg:gap-4 lg:px-6">
         <section className="shrink-0 lg:min-h-0 lg:shrink">
           {emptyBoard ? (
             <EmptyMorning gameType={gameType} />
           ) : (
             <Podium
               leaderboard={stats?.playerLeaderboard ?? []}
+              recentRounds={photoRounds}
               reducedMotion={reducedMotion}
               compact={!wide}
-              shareCardUrl={latestShare?.shareCardUrl}
             />
           )}
         </section>
+
+        <RecentFinishStrip rounds={dayPulse?.recentRounds ?? []} reducedMotion={reducedMotion} />
 
         <section className="grid shrink-0 grid-cols-1 gap-4 lg:min-h-0 lg:shrink lg:grid-cols-3 lg:gap-5">
           <div className="tv-card flex flex-col p-4 lg:min-h-0 lg:p-5">
@@ -319,54 +330,34 @@ export function TvBoardPage() {
             </ol>
           </div>
 
-          <div className="flex flex-col gap-4 lg:min-h-0">
-            <div className="tv-card flex min-h-0 flex-col p-4 lg:p-5">
-              <p className="text-sm font-semibold text-teal">Právě dohráli</p>
-              <ul className="mt-3 grid gap-y-2">
-                {recent.length === 0 && <li className="text-ink/45">První kolo dne ještě padne.</li>}
-                {recent.map((round) => (
-                  <li
-                    key={round.id}
-                    className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-3"
-                  >
-                    <span className="truncate">{round.winnerName}</span>
-                    <span className="text-sm text-ink/45">{GAME_LABELS[round.gameType]}</span>
-                    <span className="text-right text-xl font-semibold tabular-nums text-orange lg:text-2xl">
-                      {round.winnerTotal}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="tv-card min-h-0 flex-1 p-4 lg:p-5">
-              {panel === "story" && dayPulse && <StoryStats summary={dayPulse.summary} />}
-              {panel === "legend" && (
-                <LegendChallenge
-                  gameType={gameType}
-                  bestTotal={sceneBest?.bestTotal ?? null}
-                  bestName={sceneBest?.playerName ?? null}
-                />
-              )}
-              {panel === "hardest" && (
-                <div>
-                  <p className="text-sm font-semibold text-teal">Nejtěžší jamky</p>
-                  <ul className="mt-3 space-y-2">
-                    {hardest.length === 0 && <li className="text-ink/45">Jamky se ještě zahřívají.</li>}
-                    {hardest.map((hole) => (
-                      <li key={`${hole.gameType}-${hole.hole}`} className="flex items-center justify-between">
-                        <span>
-                          Jamka {hole.hole}
-                          <span className="ml-2 text-sm text-ink/40">{GAME_LABELS[hole.gameType]}</span>
-                        </span>
-                        <span className="text-xl font-semibold text-orange lg:text-2xl">
-                          {hole.vsPar > 0 ? `+${hole.vsPar}` : hole.vsPar === 0 ? "E" : hole.vsPar}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+          <div className="tv-card min-h-0 p-4 lg:p-5">
+            {panel === "story" && dayPulse && <StoryStats summary={dayPulse.summary} />}
+            {panel === "legend" && (
+              <LegendChallenge
+                gameType={gameType}
+                bestTotal={sceneBest?.bestTotal ?? null}
+                bestName={sceneBest?.playerName ?? null}
+              />
+            )}
+            {panel === "hardest" && (
+              <div>
+                <p className="text-sm font-semibold text-teal">Nejtěžší jamky</p>
+                <ul className="mt-3 space-y-2">
+                  {hardest.length === 0 && <li className="text-ink/45">Jamky se ještě zahřívají.</li>}
+                  {hardest.map((hole) => (
+                    <li key={`${hole.gameType}-${hole.hole}`} className="flex items-center justify-between">
+                      <span>
+                        Jamka {hole.hole}
+                        <span className="ml-2 text-sm text-ink/40">{GAME_LABELS[hole.gameType]}</span>
+                      </span>
+                      <span className="text-xl font-semibold text-orange lg:text-2xl">
+                        {hole.vsPar > 0 ? `+${hole.vsPar}` : hole.vsPar === 0 ? "E" : hole.vsPar}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-4 lg:min-h-0">

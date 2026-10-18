@@ -72,6 +72,46 @@ export function ranyLabel(count: number) {
   return "ran";
 }
 
+export function kolaLabel(count: number) {
+  if (count === 1) return "1 kolo";
+  if (count >= 2 && count <= 4) return `${count} kola`;
+  return `${count} kol`;
+}
+
+export function shareCardSrc(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("/")) return url;
+  try {
+    const parsed = new URL(url, typeof window === "undefined" ? "http://localhost" : window.location.origin);
+    if (parsed.pathname.startsWith("/api/")) {
+      return `${parsed.pathname}${parsed.search}`;
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
+export function sharePhotoFor(
+  playerName: string | undefined,
+  gameType: ScoreGameType | undefined,
+  rounds: ScorecardStats["recentRounds"] | undefined,
+): string | null {
+  if (!playerName || !rounds?.length) return null;
+  const withPhoto = rounds.filter((round) => round.shareCardUrl);
+  const sameGame = withPhoto.find(
+    (round) => round.winnerName === playerName && round.gameType === gameType,
+  );
+  return shareCardSrc(sameGame?.shareCardUrl ?? withPhoto.find((round) => round.winnerName === playerName)?.shareCardUrl);
+}
+
+export function recentStripSlots<T>(rounds: T[], slots = 6): Array<T | null> {
+  const newestFirst = rounds.slice(0, slots);
+  const oldestFirst = [...newestFirst].reverse();
+  const empty = Math.max(0, slots - oldestFirst.length);
+  return [...Array.from({ length: empty }, () => null), ...oldestFirst];
+}
+
 export function venueHours(now = new Date()) {
   const day = now.getDay();
   const weekendLike = day === 0 || day >= 5;

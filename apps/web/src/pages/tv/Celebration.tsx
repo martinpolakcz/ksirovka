@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { GAME_LABELS, ranyLabel, type CelebrationRound } from "./tv-shared";
+import { GAME_LABELS, ranyLabel, shareCardSrc, type CelebrationRound } from "./tv-shared";
 
 type CelebrationProps = {
   round: CelebrationRound | null;
@@ -9,7 +9,7 @@ type CelebrationProps = {
 export function Celebration({ round, reducedMotion }: CelebrationProps) {
   const title = round?.isRecord ? "Nový rekord dnes" : round?.isFirstToday ? "První na tabuli" : "Nové kolo";
   const roster = round?.standings.slice(0, 6) ?? [];
-  const shareCard = round?.shareCardUrl;
+  const shareCard = shareCardSrc(round?.shareCardUrl);
 
   return (
     <AnimatePresence>
