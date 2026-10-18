@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`3070e34`); lokálně share karta + upload plánků  
-> **Poslední aktualizace:** 2026-10-18 09:24
+> **Stav:** Produkční API+web na VPS běží (`4403a4c`)  
+> **Poslední aktualizace:** 2026-10-18 09:30
 
 ---
 
@@ -66,8 +66,8 @@ Expo účet: `martinpolak` (`martin.polak.cz@gmail.com`). EAS projekt: `@martinp
   - `ksirovka.martinpolak.cz` **A = 62.83.17.63**. `/health` přes IPv4 = `e79e54e`.
   - **AAAA = `2a0a:4cc0:61:4215:c477:34ff:feb2:9147`**. Z VPS `/health` přes `-6` = `e79e54e`. Z notebooku IPv6 timeout (lokální síť, ne VPS).
 - **SSH:** `$HOME/.ssh/netcup_ksirovka_ed25519` → `root@62.83.17.63` (Debian 13). Docker nainstalován `server-setup.sh`.
-- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `3070e34`, CI success, image `ghcr.io/martinpolakcz/ksirovka:3070e34`.
-- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` = `3070e34` (ověřeno 2026-10-17 23:31). `GET /api/v1/scorecard/course` vrací 3×20 jamek + `imageUrl`/`tip`. Záloha před deployem `ksirovka-20261017-211812.sql.gz` (16 tabulek). Migrace `0006_course_hole_maps`. Rollback = `c16b46e`.
+- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `4403a4c`, CI success, image `ghcr.io/martinpolakcz/ksirovka:4403a4c`.
+- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` = `4403a4c` (ověřeno 2026-10-18 09:30). `GET /api/v1/scorecard/course` vrací 3×20 jamek; plánky z `/uploads/holes/{hra}/{n}`. Záloha před deployem `ksirovka-20261018-072909.sql.gz` (16 tabulek). Migrace `0007`+`0008`. Rollback = `3070e34`.
 - **Lokálně (2026-09-25):** Colima znovu nastartovaná. Postgres volume byl plný (panic `No space left`); po `docker image prune -af` (~4.8 GB) je healthy, migrace `0004` aplikovaná, API na `:3801`. Expo Go Metro LAN `exp://192.168.1.37:8081`.
 
 Jediné místo s IP a doménami: `deploy/target.env`.
@@ -143,10 +143,10 @@ curl -fsS https://ksirovka.martinpolak.cz/health
 Postgres **nerecreatuj** kvůli env — `POSTGRES_PASSWORD` platí jen při prvním startu volume. Do API se dostane jen to, co je ve `deploy/docker-compose.yml` u `environment:` (`PG_PASSWORD`, `ADMIN_*`, `CORS_ORIGIN`, `LEGACY_SITE_URL`).
 
 #### iOS Scorecard (EAS → App Store Connect)
-Aktuální IPA: **1.0.0 (16)** `d8ab3c01` v App Store Connect (submit `c1d3974c`, 2026-10-17 23:31). Plánky jamek. EAS image `sdk-54`. Rollback iOS = **1.0.0 (15)** `44f59963`.
+Aktuální IPA v TestFlight: **1.0.0 (16)**. EAS **1.0.0 (17)** `badd6c0e` běží, auto-submit `1aa5f527` (2026-10-18 09:28) — tlačítka, share název, selfie na TV. EAS image `sdk-54`. Rollback iOS = **1.0.0 (16)** `d8ab3c01`.
 
 #### Android Scorecard (EAS → Google Play)
-Účet schválený 2026-09-23. AAB **1.0.0 (11)** `676351d6` (2026-10-17, plánky) je v EAS, `eas submit` pořád bez Service Account JSON. V Console zůstává AAB **1.0.0 (7)** `8ef4aa05`. Playbook: `rhino/android-play-store.md`.
+Účet schválený 2026-09-23. AAB **1.0.0 (12)** `20085777` se staví (2026-10-18). Předchozí **1.0.0 (11)** `676351d6` v EAS. `eas submit` pořád bez Service Account JSON. V Console zůstává AAB **1.0.0 (7)** `8ef4aa05`. Playbook: `rhino/android-play-store.md`.
 
 ```bash
 cd /Users/martin.polak/Projects/ksirovka-app2/ksirovka-app
@@ -206,12 +206,12 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Nasadit `e79e54e`** — 2026-09-25. Unikátní přezdívky (`score_profiles` + `POST /scorecard/profile`). `/health` IPv4 i z VPS IPv6 = `e79e54e`. Záloha `ksirovka-20260925-104312.sql.gz`. Rollback = `9afc089`.
 - [x] **Nasadit `9b01dcf`** — 2026-09-25. `GET /scorecard/profile?email=` pro doplnění přezdívky. `/health` A i IPv6 z VPS = `9b01dcf`. Záloha `ksirovka-20260925-131651.sql.gz`. Rollback = `e79e54e`.
 - [x] **Scorecard: 20 jamek, uložení, landscape, share karta** — 2026-10-17. Nasazeno API `c16b46e` (migrace `0005`, `/admin/jamky`, oficiál = otevřené jamky). Mobil app2: poslední jamka Alert Chceš uložit?, SCORECARD, landscape tabulka, skip, share PNG sheet. iOS **1.0.0 (15)** v App Store Connect. Android AAB **1.0.0 (10)** v EAS, Play submit bez service account.
-- [ ] **Otestovat kolo v TestFlight** — sync na `/vysledky` i Žebříčky. Další IPA až po share/TV změnách (17).
-- [ ] **Nasadit share kartu + plánky PNG** — 2026-10-18. Kód v working tree: migrace `0007`/`0008`, selfie na TV, admin jamky upload PNG na `/uploads/holes/{hra}/{n}` + tlačítko Uložit tip. Čeká commit + CI + `deploy.sh` + EAS 17.
+- [ ] **Otestovat kolo v TestFlight 17** — tlačítka pod jamkou, share název, selfie na TV, plánky z `/admin/jamky`.
+- [x] **Nasadit share kartu + plánky PNG** — 2026-10-18. API `4403a4c` (`/health` sedí). Migrace `0007`/`0008`. Admin nahrává PNG na `/uploads/holes/{hra}/{n}`, tip má tlačítko Uložit. iOS EAS 17 + auto-submit; Android AAB 12 ve stavbě. Rollback API = `3070e34`.
 - [x] **TV reklamy z ksirovka.cz** — 2026-09-20. 15 záznamů v `tv_promos` lokálně i na prod (8 původních + 7 z hero/dlaždic). Image pořád `9afc089`, jen data. `npm run db:seed-tv` doplní chybějící.
 - [ ] Import obsahu do produkční DB (`import:content`) — homepage z API je zatím prázdná.
 - [x] **Mobil: název na ikoně Kšírovka** — 2026-09-20. `expo.name` + `CFBundleDisplayName` + Android `label` = Kšírovka. iOS 1.0.0 (7) v TestFlight (`9ccdda44` / submit `409d2554`). Android AAB `414162cf` + APK `926c8d8c`. Play submit pořád bez service account.
-- [ ] App Store listing + Submit for Review (screenshoty, privacy). IPA 1.0.0 (16) v App Store Connect.
+- [ ] App Store listing + Submit for Review (screenshoty, privacy). IPA 1.0.0 (17) jde do ASC.
 - [x] **Nový iOS/Android EAS build** — 2026-09-20. iOS 1.0.0 (5) v TestFlight (internal beta). Android APK + AAB hotové. Play submit blokuje chybějící Google Service Account.
 - [ ] **Android na Play** — AAB **1.0.0 (7)** je v knihovně Console (2026-09-25). Upozornění bez mapping souboru ignorovat. Listing / Data safety / privacy URL pořád chybí.
 
@@ -257,7 +257,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Nové kolo: start je pod foldem** — 2026-09-25. Varianta A: lepicí **Začít kolo** dole, nastavení se sroluje nad ním.
 - [x] **Plánky jamek (UX)** — 2026-10-17. Schváleno: plánek na aktuální jamce, ne mezikrok po uložení.
 - [x] **Share copy** — 2026-10-18. Divná věta na kartě pryč; zůstává skóre, jméno, „Zahraj si na Kšírovce · Brno“.
-- [ ] **Commit + deploy share/TV + EAS 17** — kód je lokálně v `ksirovka` i `ksirovka-app2`. Bez toho TestFlight 16 selfie na TV nepošle.
+- [x] **Commit + deploy share/TV + EAS 17** — 2026-10-18. API `4403a4c` na prod. Mobil commity `430a737` + bump `3dccd73`. TestFlight 17 až EAS doběhne.
 
 ---
 
