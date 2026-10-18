@@ -12,7 +12,7 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:seed-tv": "tsx src/db/seed-tv-promos.ts",
     "import:content": "tsx scripts/import-content.ts",
-    "test": "tsx --test src/lib/scorecard.test.ts src/lib/tv-data.test.ts src/lib/course.test.ts src/lib/share-card.test.ts src/schemas/admin.test.ts",
+    "test": "tsx --test src/lib/scorecard.test.ts src/lib/tv-data.test.ts src/lib/course.test.ts src/lib/share-card.test.ts src/lib/marketing.test.ts src/schemas/admin.test.ts src/schemas/scorecard.test.ts",
     "migrate": "node dist/migrate.js"
   },
   "dependencies": {

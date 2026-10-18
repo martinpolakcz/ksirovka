@@ -42,7 +42,10 @@ export async function tvRoutes(app: FastifyInstance) {
     return {
       promos: {
         ticker: live.filter((promo) => promo.slot === "ticker").map(serialize),
-        featured: live.filter((promo) => promo.slot === "featured").map(serialize),
+        featured: [
+          ...live.filter((promo) => promo.slot === "gallery"),
+          ...live.filter((promo) => promo.slot === "featured"),
+        ].map(serialize),
       },
     };
   });

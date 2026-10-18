@@ -30,7 +30,7 @@ export function RecentFinishStrip({ rounds, reducedMotion }: RecentFinishStripPr
               );
             }
 
-            const photo = shareCardSrc(round.shareCardUrl);
+            const photo = shareCardSrc(round.winnerPhotoUrl);
             const fresh = round.id === newestId;
 
             return (

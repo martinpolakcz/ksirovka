@@ -1,7 +1,15 @@
 import type { FastifyInstance } from "fastify";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "../db/index.js";
-import { scorePlayers, scoreRounds, tvPromos } from "../db/schema.js";
+import {
+  scoreNoticeTargets,
+  scoreNotices,
+  scorePlayers,
+  scoreProfiles,
+  scoreRoundShareCards,
+  scoreRounds,
+  tvPromos,
+} from "../db/schema.js";
 import { config } from "../config.js";
 import {
   clearAdminSession,
@@ -17,10 +25,14 @@ import {
   saveTvDataSettings,
 } from "../lib/tv-data.js";
 import { getCourseGames, patchCourseHole, saveCourseHoleImage } from "../lib/course.js";
-import { decodeShareCard } from "../lib/share-card.js";
+import { loadMarketingSnapshot } from "../lib/marketing.js";
+import { decodeShareCard, shareCardPublicUrl } from "../lib/share-card.js";
+import { normalizePlayerName } from "../lib/scorecard.js";
+import { roundIdParamSchema } from "../schemas/scorecard.js";
 import {
   adminRoundsQuerySchema,
   courseHolePatchSchema,
+  createNoticeSchema,
   hideRoundSchema,
   loginSchema,
   promoPatchSchema,
@@ -29,6 +41,12 @@ import {
   tvDataSettingsSchema,
   uploadCourseImageSchema,
 } from "../schemas/admin.js";
+
+const GAME_LABELS: Record<string, string> = {
+  fotbalgolf: "Fotbalgolf",
+  minigolf: "Minigolf",
+  adventure: "Adventure Golf",
+};
 
 function toDate(value: string | null | undefined): Date | null {
   if (!value) return null;
@@ -78,6 +96,171 @@ export async function adminRoutes(app: FastifyInstance) {
     scoped.addHook("preHandler", requireAdmin);
 
     scoped.get("/admin/me", async () => ({ ok: true }));
+
+    scoped.get("/admin/marketing", async () => loadMarketingSnapshot());
+
+    scoped.post("/admin/notices", async (request, reply) => {
+      const parsed = createNoticeSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          error: "Validation failed",
+          details: parsed.error.flatten(),
+        });
+      }
+
+      const keys = [...new Set(parsed.data.nicknames.map((name) => normalizePlayerName(name)))];
+      const profiles =
+        keys.length > 0
+          ? await db
+              .select({
+                id: scoreProfiles.id,
+                nickname: scoreProfiles.nickname,
+                noticesOptIn: scoreProfiles.noticesOptIn,
+                email: scoreProfiles.email,
+              })
+              .from(scoreProfiles)
+              .where(inArray(scoreProfiles.nicknameNormalized, keys))
+          : [];
+      const targets = profiles.filter((profile) => profile.noticesOptIn && profile.email);
+      if (targets.length === 0) {
+        return reply.status(400).send({
+          error: "Nikdo z výběru nemá v appce zapnuté novinky a e-mail.",
+        });
+      }
+
+      const [notice] = await db
+        .insert(scoreNotices)
+        .values({
+          kind: parsed.data.kind,
+          title: parsed.data.title,
+          message: parsed.data.message,
+        })
+        .returning({ id: scoreNotices.id });
+
+      if (!notice) {
+        return reply.status(500).send({ error: "Kampaň se neuložila" });
+      }
+
+      await db.insert(scoreNoticeTargets).values(
+        targets.map((profile) => ({
+          noticeId: notice.id,
+          profileId: profile.id,
+        })),
+      );
+
+      return {
+        id: notice.id,
+        sent: targets.length,
+        skipped: keys.length - targets.length,
+      };
+    });
+
+    scoped.get("/admin/game-photos", async () => {
+      const cards = await db
+        .select({
+          roundId: scoreRoundShareCards.roundId,
+          createdAt: scoreRoundShareCards.createdAt,
+          gameType: scoreRounds.gameType,
+          completedAt: scoreRounds.completedAt,
+        })
+        .from(scoreRoundShareCards)
+        .innerJoin(scoreRounds, eq(scoreRounds.id, scoreRoundShareCards.roundId))
+        .where(eq(scoreRounds.hidden, false))
+        .orderBy(desc(scoreRoundShareCards.createdAt))
+        .limit(40);
+
+      const roundIds = cards.map((card) => card.roundId);
+      const winners =
+        roundIds.length > 0
+          ? await db
+              .select({
+                roundId: scorePlayers.roundId,
+                name: scorePlayers.name,
+                rank: scorePlayers.rank,
+              })
+              .from(scorePlayers)
+              .where(inArray(scorePlayers.roundId, roundIds))
+          : [];
+      const winnerByRound = new Map<number, string>();
+      for (const player of winners) {
+        if (player.rank === 1 && !winnerByRound.has(player.roundId)) {
+          winnerByRound.set(player.roundId, player.name);
+        }
+      }
+
+      const gallery = await db
+        .select({ imageUrl: tvPromos.imageUrl })
+        .from(tvPromos)
+        .where(and(eq(tvPromos.slot, "gallery"), eq(tvPromos.active, true)));
+      const onTv = new Set(gallery.map((row) => row.imageUrl).filter((url): url is string => Boolean(url)));
+
+      return {
+        items: cards.map((card) => {
+          const imageUrl = shareCardPublicUrl(card.roundId, card.createdAt);
+          return {
+            roundId: card.roundId,
+            gameType: card.gameType,
+            completedAt: card.completedAt.toISOString(),
+            winnerName: winnerByRound.get(card.roundId) ?? "",
+            imageUrl,
+            onTv: onTv.has(imageUrl),
+          };
+        }),
+      };
+    });
+
+    scoped.post("/admin/game-photos/:id/tv", async (request, reply) => {
+      const params = roundIdParamSchema.safeParse(request.params);
+      if (!params.success) {
+        return reply.status(400).send({ error: "Validation failed" });
+      }
+
+      const [card] = await db
+        .select({
+          roundId: scoreRoundShareCards.roundId,
+          createdAt: scoreRoundShareCards.createdAt,
+          gameType: scoreRounds.gameType,
+        })
+        .from(scoreRoundShareCards)
+        .innerJoin(scoreRounds, eq(scoreRounds.id, scoreRoundShareCards.roundId))
+        .where(and(eq(scoreRoundShareCards.roundId, params.data.id), eq(scoreRounds.hidden, false)))
+        .limit(1);
+
+      if (!card) {
+        return reply.status(404).send({ error: "Fotka ze hry chybí" });
+      }
+
+      const [winner] = await db
+        .select({ name: scorePlayers.name })
+        .from(scorePlayers)
+        .where(and(eq(scorePlayers.roundId, card.roundId), eq(scorePlayers.rank, 1)))
+        .limit(1);
+
+      const imageUrl = shareCardPublicUrl(card.roundId, card.createdAt);
+      const [existing] = await db
+        .select()
+        .from(tvPromos)
+        .where(and(eq(tvPromos.slot, "gallery"), eq(tvPromos.imageUrl, imageUrl)))
+        .limit(1);
+      if (existing) {
+        return { item: existing, already: true };
+      }
+
+      const [item] = await db
+        .insert(tvPromos)
+        .values({
+          slot: "gallery",
+          category: "venue",
+          title: "Fotka ze hry",
+          message: `${winner?.name ?? "Kšírovka"} · ${GAME_LABELS[card.gameType] ?? card.gameType}`,
+          imageUrl,
+          active: true,
+          sortOrder: 0,
+        })
+        .returning();
+
+      return reply.status(201).send({ item });
+    });
 
     scoped.get("/admin/course", async () => {
       const games = await getCourseGames();

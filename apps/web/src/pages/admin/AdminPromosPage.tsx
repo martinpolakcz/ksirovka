@@ -132,6 +132,7 @@ export function AdminPromosPage() {
           >
             <option value="ticker">Běžící lišta</option>
             <option value="featured">Velký slot</option>
+            <option value="gallery">Galerie ze hry</option>
           </select>
         </label>
 

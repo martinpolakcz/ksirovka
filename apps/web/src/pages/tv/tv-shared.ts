@@ -105,6 +105,12 @@ export function sharePhotoFor(
   return shareCardSrc(sameGame?.shareCardUrl ?? withPhoto.find((round) => round.winnerName === playerName)?.shareCardUrl);
 }
 
+export function profilePhotoFor(
+  player: { photoUrl?: string | null; playerName?: string } | undefined,
+): string | null {
+  return shareCardSrc(player?.photoUrl);
+}
+
 export function recentStripSlots<T>(rounds: T[], slots = 6): Array<T | null> {
   const newestFirst = rounds.slice(0, slots);
   const oldestFirst = [...newestFirst].reverse();

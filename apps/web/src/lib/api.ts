@@ -93,6 +93,7 @@ export interface ScorecardStats {
     bestTotal: number;
     avgTotal: number;
     rounds: number;
+    photoUrl?: string | null;
   }>;
   holeLeaderboard: Array<{
     hole: number;
@@ -124,13 +125,14 @@ export interface ScorecardStats {
     playerCount: number;
     winnerName: string;
     winnerTotal: number;
+    winnerPhotoUrl?: string | null;
     shareCardUrl?: string | null;
-    standings: Array<{ name: string; total: number; rank: number }>;
+    standings: Array<{ name: string; total: number; rank: number; photoUrl?: string | null }>;
   }>;
 }
 
 export type TvPromoCategory = "golf" | "hopsalkov" | "venue";
-export type TvPromoSlot = "ticker" | "featured";
+export type TvPromoSlot = "ticker" | "featured" | "gallery";
 
 export interface TvPromo {
   id: number;
@@ -189,6 +191,125 @@ export interface AdminTvData {
     today: number;
     olderThanRetention: number;
   };
+}
+
+export type MarketingGameType = ScoreGameType;
+
+export interface MarketingGameStat {
+  gameType: MarketingGameType;
+  label: string;
+  rounds: number;
+  players: number;
+  avgVsPar: number | null;
+  bestVsPar: number | null;
+  bestPlayer: string | null;
+}
+
+export interface MarketingCampaign {
+  id: string;
+  title: string;
+  pitch: string;
+  subject: string;
+  players: number;
+  emails: number;
+  nicknames: string[];
+}
+
+export interface MarketingSnapshot {
+  generatedAt: string;
+  summary: {
+    rounds: number;
+    players: number;
+    registered: number;
+    contactable: number;
+    inboxable: number;
+    lapsed: number;
+    regulars: number;
+    newThisMonth: number;
+    peakWeekday: { dow: number; label: string; rounds: number; players: number } | null;
+    peakHour: { hour: number; label: string; rounds: number } | null;
+    favoriteGame: MarketingGameStat | null;
+  };
+  campaigns: MarketingCampaign[];
+  languages: Array<{ id: string; label: string; players: number }>;
+  platforms: Array<{ id: string; label: string; players: number }>;
+  games: MarketingGameStat[];
+  vsPar: {
+    avg: number | null;
+    buckets: Array<{ id: string; label: string; count: number }>;
+  };
+  weekdays: Array<{ dow: number; label: string; rounds: number; players: number }>;
+  hours: Array<{ hour: number; label: string; rounds: number }>;
+  hourHeatmap: Array<{ dow: number; hour: number; rounds: number }>;
+  months: Array<{
+    year: number;
+    month: number;
+    label: string;
+    days: Array<{ date: string; weekday: number; inMonth: boolean; rounds: number; players: number }>;
+  }>;
+  days: Record<
+    string,
+    {
+      date: string;
+      rounds: Array<{
+        id: number;
+        gameType: MarketingGameType;
+        label: string;
+        format: string;
+        startedAt: string;
+        completedAt: string;
+        hour: number;
+        minutes: number;
+        finishedEarly: boolean;
+        players: Array<{
+          name: string;
+          total: number;
+          vsPar: number | null;
+          email: string | null;
+          firstVisit: boolean;
+        }>;
+      }>;
+    }
+  >;
+  players: MarketingPlayer[];
+}
+
+export interface MarketingPlayer {
+  nickname: string;
+  name: string | null;
+  email: string | null;
+  platform: string | null;
+  locale: string | null;
+  profileId: number | null;
+  birthYear: number | null;
+  age: number | null;
+  noticesOptIn: boolean;
+  photoUrl: string | null;
+  rounds: number;
+  firstPlayedAt: string | null;
+  lastPlayedAt: string | null;
+  daysSinceLast: number | null;
+  avgVsPar: number | null;
+  favoriteGame: MarketingGameType | null;
+  gamesPlayed: MarketingGameType[];
+  history: Array<{
+    date: string;
+    gameType: MarketingGameType;
+    label: string;
+    total: number;
+    vsPar: number | null;
+  }>;
+}
+
+export type NoticeKind = "news" | "hot" | "happened";
+
+export interface GamePhoto {
+  roundId: number;
+  gameType: MarketingGameType;
+  completedAt: string;
+  winnerName: string;
+  imageUrl: string;
+  onTv: boolean;
 }
 
 export class AdminAuthError extends Error {
@@ -314,6 +435,22 @@ export const api = {
     fetchAdmin<{ hole: CourseHole; games: CourseGames }>("/admin/course/image", {
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+  getAdminMarketing: () => fetchAdmin<MarketingSnapshot>("/admin/marketing"),
+  sendAdminNotice: (payload: {
+    kind: NoticeKind;
+    title: string;
+    message: string;
+    nicknames: string[];
+  }) =>
+    fetchAdmin<{ id: number; sent: number; skipped: number }>("/admin/notices", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getAdminGamePhotos: () => fetchAdmin<{ items: GamePhoto[] }>("/admin/game-photos"),
+  sendGamePhotoToTv: (roundId: number) =>
+    fetchAdmin<{ item: TvPromo; already?: boolean }>(`/admin/game-photos/${roundId}/tv`, {
+      method: "POST",
     }),
   getAdminRounds: (limit = 50) =>
     fetchAdmin<{ items: AdminRound[] }>(`/admin/rounds?limit=${limit}`),

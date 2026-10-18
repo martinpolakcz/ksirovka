@@ -38,3 +38,8 @@ export function shareCardPublicUrl(roundId: number, version: Date | number) {
   const stamp = version instanceof Date ? version.getTime() : version;
   return `/api/v1/scorecard/share-cards/${roundId}?v=${stamp}`;
 }
+
+export function profilePhotoPublicUrl(profileId: number, version: Date | number) {
+  const stamp = version instanceof Date ? version.getTime() : version;
+  return `/api/v1/scorecard/profile-photos/${profileId}?v=${stamp}`;
+}

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-export const promoSlots = ["ticker", "featured"] as const;
+export const promoSlots = ["ticker", "featured", "gallery"] as const;
+export const noticeKinds = ["news", "hot", "happened"] as const;
 export const promoCategories = ["golf", "hopsalkov", "venue"] as const;
 
 const optionalDate = z
@@ -79,5 +80,16 @@ export const tvDataPurgeSchema = z.discriminatedUnion("scope", [
     ids: z.array(z.number().int().positive()).min(1).max(200),
   }),
 ]);
+
+export const createNoticeSchema = z.object({
+  kind: z.enum(noticeKinds),
+  title: z.string().trim().min(1).max(80),
+  message: z.string().trim().min(1).max(500),
+  nicknames: z.array(z.string().trim().min(1).max(32)).min(1).max(500),
+});
+
+export const markNoticeReadSchema = z.object({
+  email: z.string().email().max(255),
+});
 
 export type PromoInput = z.infer<typeof promoSchema>;

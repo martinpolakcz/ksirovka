@@ -8,6 +8,7 @@ const NAV = [
   { to: "/admin", label: "Reklamy", end: true },
   { to: "/admin/kola", label: "Kola", end: false },
   { to: "/admin/jamky", label: "Jamky", end: false },
+  { to: "/admin/strategie", label: "Strategie", end: false },
 ];
 
 export function AdminLayout() {
@@ -16,7 +17,7 @@ export function AdminLayout() {
 
   useDocumentMeta({
     title: "Admin",
-    description: "Správa TV tabule Kšírovky.",
+    description: "Správa Kšírovky: reklamy, kola, jamky a marketing.",
   });
 
   useEffect(() => {
@@ -54,10 +55,10 @@ export function AdminLayout() {
   return (
     <div className="min-h-[100dvh] bg-paper text-ink">
       <header className="border-b border-ink/10 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
           <div className="flex items-center gap-6">
-            <p className="font-display text-2xl font-semibold">TV admin</p>
-            <nav className="flex gap-2">
+            <p className="font-display text-2xl font-semibold">Admin</p>
+            <nav className="flex flex-wrap gap-2">
               {NAV.map((item) => (
                 <NavLink
                   key={item.to}
@@ -85,7 +86,7 @@ export function AdminLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8">
         <Outlet />
       </main>
     </div>

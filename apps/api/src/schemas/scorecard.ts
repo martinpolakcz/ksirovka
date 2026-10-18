@@ -46,6 +46,13 @@ export const submitRoundSchema = z.object({
     .object({
       email: z.string().email().max(255).optional(),
       name: z.string().min(1).max(80).optional(),
+      platform: z.enum(["ios", "android", "other"]).optional(),
+      locale: z
+        .string()
+        .trim()
+        .regex(/^[a-z]{2}(?:-[A-Z]{2})?$/)
+        .max(8)
+        .optional(),
     })
     .optional(),
 });
@@ -54,6 +61,16 @@ export const upsertProfileSchema = z.object({
   email: z.string().email().max(255),
   name: z.string().trim().min(2).max(80),
   nickname: z.string().trim().min(2).max(32),
+  birthYear: z.number().int().min(1920).max(2018).optional(),
+  noticesOptIn: z.boolean().optional(),
+  photo: z.string().min(32).max(3_500_000).optional(),
+  platform: z.enum(["ios", "android", "other"]).optional(),
+  locale: z
+    .string()
+    .trim()
+    .regex(/^[a-z]{2}(?:-[A-Z]{2})?$/)
+    .max(8)
+    .optional(),
 });
 
 export const lookupProfileQuerySchema = z.object({

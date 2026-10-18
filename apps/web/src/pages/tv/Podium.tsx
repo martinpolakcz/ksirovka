@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import type { ScorecardStats } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { GAME_LABELS, kolaLabel, sharePhotoFor } from "./tv-shared";
+import { GAME_LABELS, kolaLabel, profilePhotoFor } from "./tv-shared";
 import { ShareFace } from "./ShareFace";
 
 const PLACE_META = [
@@ -17,13 +17,19 @@ type PodiumProps = {
   compact?: boolean;
 };
 
-export function Podium({ leaderboard, recentRounds, reducedMotion, compact = false }: PodiumProps) {
+export function Podium({ leaderboard, reducedMotion, compact = false }: PodiumProps) {
   return (
     <div className="flex flex-col gap-3 lg:grid lg:h-full lg:grid-cols-3 lg:items-end lg:gap-4 xl:gap-8">
       {PLACE_META.map((meta, index) => {
         const row = leaderboard.find((item) => item.rank === meta.place);
         const first = meta.place === 1;
-        const photo = sharePhotoFor(row?.playerName, row?.gameType, recentRounds);
+        const photo = profilePhotoFor(row);
+        const faceClass = cn(
+          "shrink-0",
+          first
+            ? "size-24 rounded-full ring-[3px] ring-white/80 lg:size-36 xl:size-44"
+            : "size-16 rounded-full ring-[3px] ring-[#d4a853] lg:size-24 xl:size-28",
+        );
         return (
           <motion.article
             key={meta.place}
@@ -41,17 +47,18 @@ export function Podium({ leaderboard, recentRounds, reducedMotion, compact = fal
             <div className="flex items-start justify-between gap-3">
               <p className="text-3xl leading-none lg:text-5xl">{meta.medal}</p>
               {photo ? (
-                <ShareFace
-                  src={photo}
-                  alt={row?.playerName ?? ""}
+                <ShareFace src={photo} alt={row?.playerName ?? ""} className={faceClass} />
+              ) : (
+                <div
                   className={cn(
-                    "shrink-0",
-                    first
-                      ? "size-24 rounded-full ring-[3px] ring-white/80 lg:size-36 xl:size-44"
-                      : "size-16 rounded-full ring-[3px] ring-[#d4a853] lg:size-24 xl:size-28",
+                    faceClass,
+                    "flex items-center justify-center font-display font-semibold",
+                    first ? "bg-white/20 text-4xl text-white lg:text-6xl" : "bg-forest-100 text-2xl text-teal lg:text-4xl",
                   )}
-                />
-              ) : null}
+                >
+                  {(row?.playerName ?? "?").slice(0, 1)}
+                </div>
+              )}
             </div>
             <div>
               <p

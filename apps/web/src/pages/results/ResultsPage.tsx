@@ -173,6 +173,17 @@ function StatsContent({ stats, locale }: { stats: ScorecardStats; locale: string
                 <span className="w-10 text-center font-display text-2xl text-teal">
                   {MEDALS[row.rank - 1] ?? row.rank}
                 </span>
+                {row.photoUrl ? (
+                  <img
+                    src={row.photoUrl}
+                    alt=""
+                    className="size-12 rounded-full object-cover ring-2 ring-teal/25"
+                  />
+                ) : (
+                  <div className="flex size-12 items-center justify-center rounded-full bg-white font-display text-lg text-teal ring-1 ring-ink/10">
+                    {row.playerName.slice(0, 1)}
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-ink">{row.playerName}</p>
                   <p className="text-xs text-ink/45">

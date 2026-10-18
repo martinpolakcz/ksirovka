@@ -46,7 +46,7 @@ export function pragueYmd(date = new Date()): { year: number; month: number; day
   return { year, month, day };
 }
 
-function pragueWeekday(date = new Date()): number {
+export function pragueWeekday(date = new Date()): number {
   const weekday = new Intl.DateTimeFormat("en-US", {
     timeZone: TIME_ZONE,
     weekday: "short",

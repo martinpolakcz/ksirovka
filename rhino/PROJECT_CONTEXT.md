@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`0bffac4`)  
-> **Poslední aktualizace:** 2026-10-18 13:41
+> **Stav:** Nasazuji Strategie + 0010 + appku (skiny, inbox)  
+> **Poslední aktualizace:** 2026-10-18 16:20
 
 ---
 
@@ -234,6 +234,11 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Share karta: copy + název souboru** — 2026-10-18. Věta „Nakopal jsem to sem…“ z karty pryč. Soubor `ksirovka_YYYY-MM-DD_jmeno.jpg` (Praha, bez diakritiky).
 - [x] **Share karta na TV** — 2026-10-18. Overlay 11 s. Pódium má původní jméno/skóre/kola a fotku hráče (ne celou brand kartu místo #1). Právě dohráli = 6 minikaret s fotkou, nejstarší vlevo, nový zprava. `shareCardUrl` je relativní `/api/v1/…` (lokální proxy i prod stejný origin).
 - [ ] **Liquid glass na chromu scorecard** — pin `LiveStandings` + akcí přes `expo-blur`, ať mřížka jamek jede pod lištou. Audit: `rhino/ui-liquid-glass.md`.
+- [x] **Admin Strategie** — 2026-10-18 lokálně. `/admin/strategie`: kdy hrají, mix her, vs par, kalendář, roster. Klik na den otevře pop-up (kdo, hra, vs par, poprvé, čas). Kampaně k oslovení, CSV/e-maily. API `GET /admin/marketing`. iPhone/Android a locale až z nové appky.
+- [x] **Hráč, fotky, kampaně v appce** — 2026-10-18 lokálně. Pop-up hráče (tabulka + den) s historií kol. Migrace `0010`: `birth_year`, `photo` bytea, `notices_opt_in`, tabulky `score_notices` + `score_notice_targets`. Login v app2 má selfie, rok narození a souhlas. TV/`/vysledky` berou profilovou fotku (fallback iniciála); share karta = fotka ze hry do galerie a TV slotu `gallery`. Admin skládá Novinka / Horká událost / Stalo se, appka po startu `GET /scorecard/notices`. Pravý Expo push a EAS až půjde do telefonu. Na prod ještě nenasazeno.
+- [x] **Kampaň: výběr hráčů v pop-upu** — 2026-10-18. Ve skladbě zprávy je **Vybrat hráče** (dialog se zaškrtávátky, hledáním, všichni/zobrazení) a **Vybrat všechny**. Doručení pořád jen e-mail + `notices_opt_in`.
+- [x] **Dětské skinny (vlastní vzhled)** — 2026-10-18 v app2. Můj profil (`/login`) má mřížku: Kšírovka (default), Liga, Modrý svět, Pouštní palác, Okruh, Ledová říše. Žádné licencované značky. `themeId` v persist store vedle `locale`. Chrom (Screen, Card, Button, scorecard) bere pack; share karta, TV, splash a logo zůstávají Kšírovka. EAS až s releasem.
+- [x] **Gramatika foursome** — 2026-10-18. „Čtveřice sdílí jednu míčku“ pryč. Fotbalgolf: **jeden míč** / vlastní míč. Minigolf a adventure: **jeden míček** / vlastní míček. Stejný rozdíl v sk/en/de/pl/vi.
 - [ ] Import obsahu do produkční DB (`import:content`) až poběží API.
 - [ ] Staging na VPS (`./scripts/deploy.sh --staging`) s vlastními daty.
 - [ ] Privacy policy stránka.
@@ -261,6 +266,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Commit + deploy share/TV + EAS 17** — 2026-10-18. API `4403a4c` na prod. Mobil `430a737` + bump `3dccd73`.
 - [x] **Commit + deploy tip/par/TV zarovnání + EAS 19** — 2026-10-18. API `00654e3`. Mobil `6c1916a` + bump `5183b17`.
 - [x] **TV pódium + 6 fotek** — 2026-10-18. `0bffac4` odkaz Výsledky v hlavičce (`/health` sedí). Záloha `ksirovka-20261018-113955.sql.gz`. Rollback = `bd5b67d`.
+- [ ] **Commit + deploy admin Strategie + 0010** — lokálně hotové (pop-up hráče, profilová fotka, inbox kampaní, galerie ze hry). Na prod ještě ne. Migrace `0009`+`0010`. Mobil app2 má login/inbox; EAS až s releasem, jinak telefony novinky neuvidí.
 
 ---
 
@@ -307,18 +313,20 @@ Mobil (Expo) --POST /api/v1/scorecard/rounds--> Fastify + Postgres (VPS)
      +--GET /api/v1/scorecard/stats                 +-- Web /vysledky + /tv (karta přes GET /share-cards/:id)
 ```
 - Idempotence: unikátní `client_round_id`; duplicita vrací `{ success: true, duplicate: true }`.
-- Login v appce je lokální profil (e-mail + jméno + přezdívka v AsyncStorage), ne OIDC. Bez kompletního profilu appka nepustí dál. Přezdívka musí být unikátní (`score_profiles`); na žebříček jde přezdívka.
+- Login v appce je lokální profil (e-mail + jméno + přezdívka + rok narození + selfie + souhlas s novinkami v AsyncStorage), ne OIDC. Bez e-mailu/jména/přezdívky appka nepustí dál. Nové uložení vyžaduje rok 1920–2018, fotku a zaškrtnuté novinky. Přezdívka musí být unikátní; na žebříček jde přezdívka, na TV pódium profilová fotka (`GET /scorecard/profile-photos/:id`).
 - Store build jde na HTTPS `https://ksirovka.martinpolak.cz/api/v1`.
-- TV admin `/admin/kola` maže kola (cascade hráči + jamky). `/admin/jamky` vypíná jamky v rekonstrukci (`PATCH /api/v1/admin/course`). Cron retence běží v procesu API (ne systemd): jednou denně v `runHour` Europe/Prague, maže kola starší než `retentionDays`. Výchozí vypnuto.
+- TV admin `/admin/kola` maže kola (cascade hráči + jamky). `/admin/jamky` vypíná jamky v rekonstrukci (`PATCH /api/v1/admin/course`). `/admin/strategie` je marketingový přehled (`GET /admin/marketing`): dny/hodiny v Europe/Prague, mix her, vs par, kalendář, hráči. Cron retence běží v procesu API (ne systemd): jednou denně v `runHour` Europe/Prague, maže kola starší než `retentionDays`. Výchozí vypnuto.
+- `score_profiles.platform` (`ios`/`android`/`other`) a `locale` (`cs`/`sk`/…) se doplní z appky při `POST /scorecard/profile` a při odeslání kola. Migrace `0009`. `birth_year`, `photo`/`photo_mime`, `notices_opt_in` = migrace `0010`.
+- Inbox kampaní: admin `POST /admin/notices` (kind `news`/`hot`/`happened`) jen na profily s e-mailem a `notices_opt_in`. Ve skladbě na `/admin/strategie` je pop-up Koho oslovit (konkrétní / všichni). Appka `GET /scorecard/notices?email=` + `POST .../read`. Bez lock-screen push.
 - Pars žijí v `score_course_holes` (default 2, admin 1–8). Appka si layout stáhne; bez API padá na 20× par 2. Plánek = PNG/JPEG v `score_course_hole_images`, veřejně `/uploads/holes/{hra}/{n}`. PATCH jamky posílá jen změněná pole — vynechané `undefined` nesmí spadnout na `null` (mazalo by plánek).
 - TV reklamy: tabulka `tv_promos`, admin `/admin` → reklamy, board `GET /api/v1/tv/board`. Výchozí sada 15 kusů v `apps/api/src/data/tv-promos.ts` (hero + dlaždice ksirovka.cz). Na prod nahráno 2026-09-20 (15 řádků). Pravý sloupec `/tv` je celý reklama; QR je plovoucí lístek vpravo dole nad tickerem (ne karta nad reklamou).
-- Share karta kola: tabulka `score_round_share_cards` (1:1 na kolo, cascade s retencí). Mobil po selfie/sdílení POSTuje JPEG (max ~2,5 MB). Stats vrací relativní `shareCardUrl`. `/tv`: pódium 2/1/3 v původní velikosti (jméno, hra, kola, skóre + kruhový medailon obličeje). Právě dohráli = 6 medailonků: kruhová fotka se zlatým kroužkem, velké oranžové skóre, jméno, hra; nejstarší vlevo, nový zprava s tealcovým prstencem. Bez fotky iniciála na barvě hry. Overlay oslavy 11 s. GET share-card má `Cross-Origin-Resource-Policy: cross-origin`. Caddy `request_body max_size 5MB`.
+- Share karta kola: tabulka `score_round_share_cards` (1:1 na kolo, cascade s retencí). Mobil po fotce ze hry POSTuje JPEG (max ~2,5 MB) — parta/jamka, ne obličej do žebříčku. Admin galerie `GET /admin/game-photos` + `POST .../tv` založí `tv_promos.slot=gallery`. Stats vrací `photoUrl` u hráče a `winnerPhotoUrl` u kola. `/tv`: pódium a Právě dohráli berou profilovou fotku (fallback iniciála). Overlay oslavy pořád ukáže share kartu kola. GET share-card / profile-photo má `Cross-Origin-Resource-Policy: cross-origin`. Caddy `request_body max_size 5MB`.
 
 ---
 
 ## 11. Mobilní UI (liquid glass)
-- Obal: `Screen` = `LinearGradient` `#111f19 → #21382d`; horní řádek v toku pod safe area (počasí vlevo, jazyk vpravo), ne overlay.
+- Obal: `Screen` = `LinearGradient` z aktuálního skinu (default Kšírovka `#111f19 → #21382d`); horní řádek v toku pod safe area (počasí vlevo, jazyk vpravo), ne overlay. Skin se volí v Můj profil (`themeId`: `ksirovka` / `liga` / `modry-svet` / `poustni-palac` / `okruh` / `ledova-rise`). Packy v `src/theme/packs.ts`. Share JPEG a TV zůstávají klubové.
 - `Card` = `rgba(38,68,53,0.85)` v toku, ne overlay.
-- Jediné místo, kde chrom sedí na obsahu: **scorecard** — `LiveStandings` (0.95) + akční tlačítka pod `ScrollView` (v toku, ne `absolute`). Pod **Potvrdit jamku** jsou tři orámovaná tlačítka (Přeskočit / Ukončit / Zrušit). Na šířku je fullscreen `GameScorecard` (živá data). Sdílení = JPEG karta `ksirovka_datum_hrac.jpg` + systémový share sheet; po uložení kola se composer otevře sám kvůli selfie.
+- Jediné místo, kde chrom sedí na obsahu: **scorecard** — `LiveStandings` (0.95) + akční tlačítka pod `ScrollView` (v toku, ne `absolute`). Pod **Potvrdit jamku** jsou tři orámovaná tlačítka (Přeskočit / Ukončit / Zrušit). Na šířku je fullscreen `GameScorecard` (živá data). Sdílení = JPEG karta `ksirovka_datum_hrac.jpg` + systémový share sheet; po uložení kola se composer otevře kvůli fotce ze hry (galerie/TV).
 - Detail auditu: `rhino/ui-liquid-glass.md`.
 - **Logo (2026-09-20):** motiv tyrkys + oranžový oblouk + tečka. `Logo.tsx` bere `assets/logo-mark.png`. Store ikony v 1.0.0 (5) / Android versionCode 2.

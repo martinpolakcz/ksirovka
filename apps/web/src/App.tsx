@@ -23,6 +23,7 @@ import { AdminLayout } from "@/pages/admin/AdminLayout";
 import { AdminPromosPage } from "@/pages/admin/AdminPromosPage";
 import { AdminRoundsPage } from "@/pages/admin/AdminRoundsPage";
 import { AdminCoursePage } from "@/pages/admin/AdminCoursePage";
+import { AdminMarketingPage } from "@/pages/admin/AdminMarketingPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +87,7 @@ export default function App() {
             <Route index element={<AdminPromosPage />} />
             <Route path="kola" element={<AdminRoundsPage />} />
             <Route path="jamky" element={<AdminCoursePage />} />
+            <Route path="strategie" element={<AdminMarketingPage />} />
           </Route>
           <Route element={<Layout />}>
             <Route index element={<HomePage />} />

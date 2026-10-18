@@ -172,9 +172,40 @@ export const scoreProfiles = pgTable("score_profiles", {
   name: text("name").notNull(),
   nickname: text("nickname").notNull(),
   nicknameNormalized: text("nickname_normalized").notNull().unique(),
+  platform: text("platform"),
+  locale: text("locale"),
+  birthYear: integer("birth_year"),
+  photoMime: text("photo_mime"),
+  photo: bytea("photo"),
+  noticesOptIn: boolean("notices_opt_in").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const scoreNotices = pgTable("score_notices", {
+  id: serial("id").primaryKey(),
+  kind: text("kind").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const scoreNoticeTargets = pgTable(
+  "score_notice_targets",
+  {
+    noticeId: integer("notice_id")
+      .notNull()
+      .references(() => scoreNotices.id, { onDelete: "cascade" }),
+    profileId: integer("profile_id")
+      .notNull()
+      .references(() => scoreProfiles.id, { onDelete: "cascade" }),
+    readAt: timestamp("read_at"),
+  },
+  (table) => [
+    primaryKey({ columns: [table.noticeId, table.profileId] }),
+    index("score_notice_targets_profile_idx").on(table.profileId),
+  ],
+);
 
 export const scoreCourseHoleImages = pgTable(
   "score_course_hole_images",
@@ -271,6 +302,8 @@ export type Article = typeof articles.$inferSelect;
 export type HeroSlide = typeof heroSlides.$inferSelect;
 export type ActivityTile = typeof activityTiles.$inferSelect;
 export type ScoreProfile = typeof scoreProfiles.$inferSelect;
+export type ScoreNotice = typeof scoreNotices.$inferSelect;
+export type ScoreNoticeTarget = typeof scoreNoticeTargets.$inferSelect;
 export type ScoreRound = typeof scoreRounds.$inferSelect;
 export type ScorePlayer = typeof scorePlayers.$inferSelect;
 export type ScoreHoleScore = typeof scoreHoleScores.$inferSelect;

@@ -1,7 +1,14 @@
 import { AnimatePresence, motion } from "framer-motion";
 import type { TvPromo } from "@/lib/api";
 import { assetUrl } from "@/lib/utils";
-import { CATEGORY_LABELS } from "./tv-shared";
+import { CATEGORY_LABELS, shareCardSrc } from "./tv-shared";
+
+function promoImageSrc(url: string) {
+  if (url.startsWith("/api/") || url.includes("/api/v1/")) {
+    return shareCardSrc(url) ?? url;
+  }
+  return assetUrl(url);
+}
 
 type FeaturedAdProps = {
   promo: TvPromo | undefined;
@@ -23,7 +30,7 @@ export function FeaturedAd({ promo, reducedMotion }: FeaturedAdProps) {
           >
             {promo.imageUrl && (
               <img
-                src={assetUrl(promo.imageUrl)}
+                src={promoImageSrc(promo.imageUrl)}
                 alt=""
                 className="absolute inset-0 h-full w-full object-cover object-center"
               />
