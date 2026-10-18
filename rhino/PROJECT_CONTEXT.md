@@ -2,7 +2,7 @@
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
 > **Stav:** Produkční API+web na VPS běží (`e0ef76b`)  
-> **Poslední aktualizace:** 2026-10-18 17:49
+> **Poslední aktualizace:** 2026-10-18 17:59
 
 ---
 
@@ -233,6 +233,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Scorecard: tři akce jako tlačítka** — 2026-10-18. Přeskočit / Ukončit / Zrušit pod Potvrdit jamku jsou orámovaná tlačítka (ikona + krátký popisek), ne zlatý text. Zrušit je červené.
 - [x] **Share karta: copy + název souboru** — 2026-10-18. Věta „Nakopal jsem to sem…“ z karty pryč. Soubor `ksirovka_YYYY-MM-DD_jmeno.jpg` (Praha, bez diakritiky).
 - [x] **Share karta na TV** — 2026-10-18. Overlay 11 s. Pódium má původní jméno/skóre/kola a fotku hráče (ne celou brand kartu místo #1). Právě dohráli = 6 minikaret s fotkou, nejstarší vlevo, nový zprava. `shareCardUrl` je relativní `/api/v1/…` (lokální proxy i prod stejný origin).
+- [x] **TV overlay bez fotky = stejná karta** — 2026-10-18. Android bez fotky nahrává kolo hned, share JPEG až po fotce ze hry. Dřív to na `/tv` spustilo bílý overlay (Nové kolo, obří jméno, létající míček). Teď je vždy tmavé `Právě dohráli` 11 s: s JPEG share kartou, bez ní HTML karta (logo, profilová fotka nebo iniciála, hra, skóre, vs par, Brno). Mobil se nemění — stačí web.
 - [ ] **Liquid glass na chromu scorecard** — pin `LiveStandings` + akcí přes `expo-blur`, ať mřížka jamek jede pod lištou. Audit: `rhino/ui-liquid-glass.md`.
 - [x] **Admin Strategie** — 2026-10-18 na prod `7eb23e6`. `/admin/strategie`: kdy hrají, mix her, vs par, kalendář, roster. Klik na den otevře pop-up (kdo, hra, vs par, poprvé, čas). Kampaně k oslovení, CSV/e-maily. API `GET /admin/marketing` (21 hráčů). iPhone/Android a locale až z appky 21.
 - [x] **Hráč, fotky, kampaně v appce** — 2026-10-18 na prod `7eb23e6`. Pop-up hráče (tabulka + den) s historií kol. Migrace `0010`: `birth_year`, `photo` bytea, `notices_opt_in`, tabulky `score_notices` + `score_notice_targets`. Login v app2 má selfie, rok narození a souhlas. TV/`/vysledky` berou profilovou fotku (fallback iniciála); share karta = fotka ze hry do galerie a TV slotu `gallery`. Admin skládá Novinka / Horká událost / Stalo se, appka po startu `GET /scorecard/notices`. EAS iOS **1.0.0 (21)** + Android 16 ve frontě. Pravý Expo push až později.
@@ -330,7 +331,7 @@ Mobil (Expo) --POST /api/v1/scorecard/rounds--> Fastify + Postgres (VPS)
 - Inbox kampaní: admin `POST /admin/notices` (kind `news`/`hot`/`happened`) jen na profily s e-mailem a `notices_opt_in`. `GET /admin/notices` je historie odeslaných (titulek, druh, čas, příjemci, přečteno) ve Skladbě zprávy. Ve skladbě na `/admin/strategie` je pop-up Koho oslovit (konkrétní / všichni). Appka `GET /scorecard/notices?email=` + `POST .../read`. Bez lock-screen push.
 - Pars žijí v `score_course_holes` (default 2, admin 1–8). Appka si layout stáhne; bez API padá na 20× par 2. Plánek = PNG/JPEG v `score_course_hole_images`, veřejně `/uploads/holes/{hra}/{n}`. PATCH jamky posílá jen změněná pole — vynechané `undefined` nesmí spadnout na `null` (mazalo by plánek).
 - TV reklamy: tabulka `tv_promos`, admin `/admin` → reklamy, board `GET /api/v1/tv/board`. Rychlost lišty je `tv_data_settings.ticker_seconds` (8–120, default 36), posuvník na Reklamách. Obrázek jde nahrát jako PNG/JPEG (`POST /admin/promos/:id/image`) do `tv_promo_images`, veřejně `/uploads/promos/:id`; URL pole zůstává. Výchozí sada 15 kusů v `apps/api/src/data/tv-promos.ts` (hero + dlaždice ksirovka.cz). Na prod nahráno 2026-09-20 (15 řádků). Pravý sloupec `/tv` je celý reklama; QR je plovoucí lístek vpravo dole nad tickerem (ne karta nad reklamou).
-- Share karta kola: tabulka `score_round_share_cards` (1:1 na kolo). Mobil po fotce ze hry POSTuje JPEG (max ~2,5 MB) — parta/jamka, ne obličej do žebříčku. Admin `/admin/galerie` je přehled všech fotek ze hry i selfie (`GET /admin/game-photos`, `GET /admin/profile-photos`) se stažením. `POST .../tv` založí `tv_promos.slot=gallery`. `/tv` pódium: `podiumLeaderboard` (kola od `podium_since`); 4–10 a Právě dohráli z celého období. GET share-card / profile-photo má `Cross-Origin-Resource-Policy: cross-origin`. Caddy `request_body max_size 5MB`.
+- Share karta kola: tabulka `score_round_share_cards` (1:1 na kolo). Mobil po fotce ze hry POSTuje JPEG (max ~2,5 MB) — parta/jamka, ne obličej do žebříčku. Bez fotky se JPEG neposílá. `/tv` overlay je vždy tmavá karta „Právě dohráli“ (11 s): JPEG když je, jinak HTML dvojče s `winnerPhotoUrl` nebo iniciálou. Admin `/admin/galerie` je přehled všech fotek ze hry i selfie (`GET /admin/game-photos`, `GET /admin/profile-photos`) se stažením. `POST .../tv` založí `tv_promos.slot=gallery`. `/tv` pódium: `podiumLeaderboard` (kola od `podium_since`); 4–10 a Právě dohráli z celého období. GET share-card / profile-photo má `Cross-Origin-Resource-Policy: cross-origin`. Caddy `request_body max_size 5MB`.
 
 ---
 

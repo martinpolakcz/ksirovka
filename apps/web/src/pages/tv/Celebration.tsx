@@ -1,5 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { GAME_LABELS, ranyLabel, shareCardSrc, type CelebrationRound } from "./tv-shared";
+import { TvFace } from "./ShareFace";
+import {
+  GAME_COLORS,
+  GAME_LABELS,
+  shareCardSrc,
+  vsParLabel,
+  type CelebrationRound,
+} from "./tv-shared";
 
 type CelebrationProps = {
   round: CelebrationRound | null;
@@ -7,82 +14,61 @@ type CelebrationProps = {
 };
 
 export function Celebration({ round, reducedMotion }: CelebrationProps) {
-  const title = round?.isRecord ? "Nový rekord dnes" : round?.isFirstToday ? "První na tabuli" : "Nové kolo";
-  const roster = round?.standings.slice(0, 6) ?? [];
   const shareCard = shareCardSrc(round?.shareCardUrl);
+  const face = shareCardSrc(round?.winnerPhotoUrl);
 
   return (
     <AnimatePresence>
       {round && (
         <motion.div
-          className={
-            shareCard
-              ? "absolute inset-0 z-40 flex items-center justify-center overflow-hidden bg-[#111f19]"
-              : "absolute inset-0 z-40 flex items-center justify-center overflow-hidden bg-white/95"
-          }
+          className="absolute inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#111f19]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          {shareCard ? (
-            <motion.div
-              initial={reducedMotion ? false : { scale: 0.86, y: 28, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              className="relative flex max-h-[92vh] max-w-[min(92vw,720px)] flex-col items-center px-4"
-            >
-              <p className="mb-4 text-sm font-semibold tracking-[0.2em] text-[#d4a853] uppercase">
-                Právě dohráli
-              </p>
+          <motion.div
+            initial={reducedMotion ? false : { scale: 0.86, y: 28, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            className="relative flex max-h-[92vh] max-w-[min(92vw,720px)] flex-col items-center px-4"
+          >
+            <p className="mb-4 text-sm font-semibold tracking-[0.2em] text-[#d4a853] uppercase">
+              Právě dohráli
+            </p>
+            {shareCard ? (
               <img
                 src={shareCard}
                 alt={`${round.winnerName} · ${round.winnerTotal}`}
                 className="block max-h-[82vh] w-auto rounded-[8%/6.4%] object-contain shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
               />
-            </motion.div>
-          ) : (
-            <>
-              {!reducedMotion && (
-                <motion.span
-                  className="absolute size-16 rounded-full bg-orange shadow-[0_0_50px_#fd960c]"
-                  initial={{ x: "-55vw", y: "40vh", scale: 0.4 }}
-                  animate={{ x: 0, y: -40, scale: 1.15 }}
-                  transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-                />
-              )}
-              <motion.div
-                initial={reducedMotion ? false : { scale: 0.7, y: 40, opacity: 0 }}
-                animate={{ scale: 1, y: 0, opacity: 1 }}
-                exit={{ opacity: 0, scale: 0.94 }}
-                transition={{ delay: reducedMotion ? 0 : 0.55, duration: 0.45 }}
-                className="relative flex max-w-6xl flex-col items-center text-center"
-              >
-                <p className="text-sm font-semibold text-teal">{title}</p>
-                <p className="mt-3 font-display text-7xl font-semibold text-orange xl:text-8xl">{round.winnerName}</p>
-                <p className="mt-4 font-display text-8xl font-semibold text-ink xl:text-9xl">{round.winnerTotal}</p>
-                <p className="mt-3 text-xl text-ink/50">
+            ) : (
+              <article className="flex aspect-[4/5] h-[min(82vh,calc(92vw*1.25))] max-h-[82vh] w-auto flex-col items-center justify-between overflow-hidden rounded-[8%/6.4%] bg-[#12352f] bg-gradient-to-b from-[#0eada7] via-[#163832] to-[#111f19] px-[8%] py-[7%] text-center shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+                <img src="/logo-wordmark.svg" alt="Kšírovka" className="h-8 w-auto brightness-0 invert lg:h-9" />
+                <TvFace
+                  src={face}
+                  alt={round.winnerName}
+                  sizeClassName="size-[8.5rem] lg:size-[11.5rem]"
+                  fallbackClassName="text-5xl font-semibold text-white lg:text-6xl"
+                  fallbackStyle={{ backgroundColor: GAME_COLORS[round.gameType] }}
+                >
+                  {round.winnerName.slice(0, 1)}
+                </TvFace>
+                <p className="text-xs font-semibold tracking-[0.22em] text-white/85 uppercase lg:text-sm">
                   {GAME_LABELS[round.gameType]}
-                  {round.gap != null && round.gap > 0
-                    ? ` · o ${round.gap} ${ranyLabel(round.gap)} před druhým`
-                    : " · právě dohráli"}
                 </p>
-                {roster.length > 1 && (
-                  <ul className="mt-8 flex flex-wrap justify-center gap-3">
-                    {roster.map((player) => (
-                      <li
-                        key={`${player.rank}-${player.name}`}
-                        className="rounded-full bg-mist px-5 py-2 text-lg text-ink/80"
-                      >
-                        <span className="mr-2 text-teal">{player.rank}.</span>
-                        {player.name}
-                        <span className="ml-2 font-display font-semibold text-ink">{player.total}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </motion.div>
-            </>
-          )}
+                <p className="font-display text-7xl font-semibold leading-none text-[#d4a853] lg:text-8xl">
+                  {round.winnerTotal}
+                </p>
+                <p className="text-2xl font-semibold text-white lg:text-3xl">{round.winnerName}</p>
+                <p className="text-sm text-white/55 lg:text-base">
+                  {vsParLabel(round.winnerTotal, round.holesPlayed)}
+                </p>
+                <p className="text-[11px] font-semibold tracking-[0.16em] text-orange uppercase lg:text-xs">
+                  Zahraj si na Kšírovce · Brno
+                </p>
+              </article>
+            )}
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

@@ -16,8 +16,6 @@ import { RecentFinishStrip } from "./RecentFinishStrip";
 import { StoryStats } from "./StoryStats";
 import { Ticker } from "./Ticker";
 import {
-  CELEBRATION_MS,
-  CELEBRATION_RECORD_MS,
   CELEBRATION_SHARE_MS,
   FEATURED_ROTATE_MS,
   FULLSCREEN_AD_EVERY_MS,
@@ -215,12 +213,7 @@ export function TvBoardPage() {
       }
       return;
     }
-    const hold = celebration.shareCardUrl
-      ? CELEBRATION_SHARE_MS
-      : celebration.isRecord
-        ? CELEBRATION_RECORD_MS
-        : CELEBRATION_MS;
-    const timer = window.setTimeout(() => setCelebration(null), hold);
+    const timer = window.setTimeout(() => setCelebration(null), CELEBRATION_SHARE_MS);
     return () => window.clearTimeout(timer);
   }, [celebration, featured.length, wide]);
 

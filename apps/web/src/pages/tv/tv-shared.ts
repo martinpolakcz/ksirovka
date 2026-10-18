@@ -73,6 +73,14 @@ export function ranyLabel(count: number) {
   return "ran";
 }
 
+export function vsParLabel(total: number, holesPlayed: number) {
+  const holes = holesPlayed > 0 ? holesPlayed : 20;
+  const diff = total - holes * 2;
+  if (diff === 0) return "E (na par)";
+  if (diff > 0) return `+${diff} nad par`;
+  return `${diff} pod par`;
+}
+
 export function kolaLabel(count: number) {
   if (count === 1) return "1 kolo";
   if (count >= 2 && count <= 4) return `${count} kola`;
