@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`00654e3`)  
-> **Poslední aktualizace:** 2026-10-18 12:18
+> **Stav:** Produkční API+web na VPS běží (`012ed38`)  
+> **Poslední aktualizace:** 2026-10-18 12:20
 
 ---
 
@@ -66,8 +66,8 @@ Expo účet: `martinpolak` (`martin.polak.cz@gmail.com`). EAS projekt: `@martinp
   - `ksirovka.martinpolak.cz` **A = 62.83.17.63**. `/health` přes IPv4 = `e79e54e`.
   - **AAAA = `2a0a:4cc0:61:4215:c477:34ff:feb2:9147`**. Z VPS `/health` přes `-6` = `e79e54e`. Z notebooku IPv6 timeout (lokální síť, ne VPS).
 - **SSH:** `$HOME/.ssh/netcup_ksirovka_ed25519` → `root@62.83.17.63` (Debian 13). Docker nainstalován `server-setup.sh`.
-- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `00654e3`, CI success, image `ghcr.io/martinpolakcz/ksirovka:00654e3`.
-- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` = `00654e3` (ověřeno 2026-10-18 11:43). `GET /api/v1/scorecard/course` vrací 3×20 jamek; plánky z `/uploads/holes/{hra}/{n}`. Záloha před deployem `ksirovka-20261018-094219.sql.gz` (18 tabulek). Migrace `0007`+`0008`. Rollback = `4403a4c`. Jamka 2 má tip, plánek je `null` (smazaný starým PATCHem) — nahrát znovu v `/admin/jamky`.
+- **Git / CI:** https://github.com/martinpolakcz/ksirovka — `main` `012ed38`, CI success, image `ghcr.io/martinpolakcz/ksirovka:012ed38`.
+- **Běží:** Caddy + `ksirovka-api` + Postgres. `/health` = `012ed38` (ověřeno 2026-10-18 12:20). `GET /api/v1/scorecard/course` vrací 3×20 jamek; plánky z `/uploads/holes/{hra}/{n}`. Záloha před deployem `ksirovka-20261018-102011.sql.gz` (18 tabulek). Migrace `0007`+`0008`. Rollback = `00654e3`. Jamka 2 má tip, plánek je `null` (smazaný starým PATCHem) — nahrát znovu v `/admin/jamky`.
 - **Lokálně (2026-09-25):** Colima znovu nastartovaná. Postgres volume byl plný (panic `No space left`); po `docker image prune -af` (~4.8 GB) je healthy, migrace `0004` aplikovaná, API na `:3801`. Expo Go Metro LAN `exp://192.168.1.37:8081`.
 
 Jediné místo s IP a doménami: `deploy/target.env`.
@@ -259,7 +259,8 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Plánky jamek (UX)** — 2026-10-17. Schváleno: plánek na aktuální jamce, ne mezikrok po uložení.
 - [x] **Share copy** — 2026-10-18. Divná věta na kartě pryč; zůstává skóre, jméno, „Zahraj si na Kšírovce · Brno“.
 - [x] **Commit + deploy share/TV + EAS 17** — 2026-10-18. API `4403a4c` na prod. Mobil `430a737` + bump `3dccd73`.
-- [x] **Commit + deploy tip/par/TV zarovnání + EAS 19** — 2026-10-18. API `00654e3` na prod. Mobil `6c1916a` + bump `5183b17`. iOS 19 `75ea33d1` auto-submit; Android 14 `e5e5ea9f`.
+- [x] **Commit + deploy tip/par/TV zarovnání + EAS 19** — 2026-10-18. API `00654e3`. Mobil `6c1916a` + bump `5183b17`.
+- [x] **Selfie na 1. místo pódia** — 2026-10-18. Nasazeno `012ed38`. Karta z fotky je nahoře místo jména; Právě dohráli je zase jen seznam. Rollback = `00654e3`.
 
 ---
 
