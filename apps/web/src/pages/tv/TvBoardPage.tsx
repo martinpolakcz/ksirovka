@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api, isStaticOnly, type ScoreGameType } from "@/lib/api";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
@@ -255,7 +256,15 @@ export function TvBoardPage() {
       <header className="relative z-10 flex flex-col gap-3 px-4 py-3 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:items-center lg:gap-4 lg:px-6 lg:py-4">
         <div className="flex items-center justify-between gap-3">
           <img src="/logo-wordmark.svg" alt="Kšírovka" className="h-8 w-auto lg:h-10 xl:h-12" />
-          <p className="text-2xl font-semibold text-teal tabular-nums lg:hidden">{formatClock(now)}</p>
+          <div className="flex items-center gap-2 lg:hidden">
+            <Link
+              to="/vysledky"
+              className="rounded-full px-2.5 py-1 text-xs text-ink/40 ring-1 ring-ink/10"
+            >
+              Výsledky
+            </Link>
+            <p className="text-2xl font-semibold text-teal tabular-nums">{formatClock(now)}</p>
+          </div>
         </div>
 
         <div className="flex flex-col items-center gap-2">
@@ -292,9 +301,15 @@ export function TvBoardPage() {
           </div>
         </div>
 
-        <p className="hidden justify-self-end text-4xl font-semibold text-teal tabular-nums lg:block">
-          {formatClock(now)}
-        </p>
+        <div className="hidden items-center justify-self-end gap-3 lg:flex">
+          <Link
+            to="/vysledky"
+            className="rounded-full px-3 py-1 text-xs text-ink/35 ring-1 ring-ink/10 hover:text-teal hover:ring-teal/40"
+          >
+            Výsledky
+          </Link>
+          <p className="text-4xl font-semibold text-teal tabular-nums">{formatClock(now)}</p>
+        </div>
       </header>
 
       <main className="relative z-10 flex flex-col gap-4 px-4 pb-3 lg:grid lg:min-h-0 lg:flex-1 lg:grid-rows-[minmax(0,1.25fr)_auto_minmax(0,0.8fr)] lg:gap-4 lg:px-6">

@@ -1,8 +1,8 @@
 # PROJECT CONTEXT: Kšírovka
 > **Umístění souboru:** `rhino/PROJECT_CONTEXT.md`  
 > **Typ projektu:** Hybrid (Web SPA + Fastify API + Expo mobil)  
-> **Stav:** Produkční API+web na VPS běží (`bd5b67d`)  
-> **Poslední aktualizace:** 2026-10-18 13:35
+> **Stav:** Produkční API+web na VPS běží (`bd5b67d`); odkaz TV → /vysledky čeká na deploy  
+> **Poslední aktualizace:** 2026-10-18 13:40
 
 ---
 
@@ -260,7 +260,7 @@ První Play submit = internal testing. Tester instaluje přes **opt-in odkaz + O
 - [x] **Share copy** — 2026-10-18. Divná věta na kartě pryč; zůstává skóre, jméno, „Zahraj si na Kšírovce · Brno“.
 - [x] **Commit + deploy share/TV + EAS 17** — 2026-10-18. API `4403a4c` na prod. Mobil `430a737` + bump `3dccd73`.
 - [x] **Commit + deploy tip/par/TV zarovnání + EAS 19** — 2026-10-18. API `00654e3`. Mobil `6c1916a` + bump `5183b17`.
-- [x] **TV pódium + 6 fotek** — 2026-10-18. `bd5b67d` plovoucí QR vpravo dole (`/health` sedí). Záloha `ksirovka-20261018-113302.sql.gz`. Rollback = `df72689`.
+- [x] **TV pódium + 6 fotek** — 2026-10-18. `bd5b67d` plovoucí QR. V hlavičce malé **Výsledky** → `/vysledky` (ještě nenasazeno). Záloha `ksirovka-20261018-113302.sql.gz`. Rollback = `df72689`.
 
 ---
 
